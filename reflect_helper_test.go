@@ -1,7 +1,7 @@
 package djoemo_test
 
 import (
-	. "adjoe.io/djoemo"
+	. "djoemo"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

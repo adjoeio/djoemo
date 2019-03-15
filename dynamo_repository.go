@@ -35,7 +35,7 @@ func (repository *Repository) WithMetrics(metricsInterface MetricsInterface) {
 // returns true if item is found, returns false and nil if no item found, returns false and an error in case of error
 func (repository *Repository) GetWithContext(key KeyInterface, item interface{}, ctx context.Context) (bool, error) {
 	if err := isValidKey(key); err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return false, err
 	}
 
@@ -50,11 +50,11 @@ func (repository *Repository) GetWithContext(key KeyInterface, item interface{},
 	err := query.One(item)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
-			repository.log.Infof(key.TableName(), ErrNoItemFound.Error(), ctx)
+			repository.log.Info(key.TableName(), ErrNoItemFound.Error(), ctx)
 			return false, nil
 		}
 
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return false, err
 	}
 
@@ -65,19 +65,19 @@ func (repository *Repository) GetWithContext(key KeyInterface, item interface{},
 // returns error in case of error
 func (repository *Repository) SaveWithContext(key KeyInterface, item interface{}, ctx context.Context) error {
 	if err := isValidKey(key); err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return err
 	}
 
 	err := repository.table(key.TableName()).Put(item).Run()
 	if err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return err
 	}
 
 	err = repository.metrics.Publish(key.TableName(), MetricNameSavedItemsCount, float64(1))
 	if err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 	}
 
 	return nil
@@ -88,7 +88,7 @@ func (repository *Repository) SaveWithContext(key KeyInterface, item interface{}
 // returns error in case of error
 func (repository *Repository) UpdateWithContext(expression UpdateExpression, key KeyInterface, values map[string]interface{}, ctx context.Context) error {
 	if err := isValidKey(key); err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return err
 	}
 
@@ -113,7 +113,7 @@ func (repository *Repository) UpdateWithContext(expression UpdateExpression, key
 		if expression == SetExpr {
 			valueSlice, err := InterfaceToArrayOfInterface(value)
 			if err != nil {
-				repository.log.Errorf(key.TableName(), err.Error(), ctx)
+				repository.log.Error(key.TableName(), err.Error(), ctx)
 				return err
 			}
 			update.SetExpr(expr, valueSlice...)
@@ -122,13 +122,13 @@ func (repository *Repository) UpdateWithContext(expression UpdateExpression, key
 
 	err := update.Run()
 	if err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return err
 	}
 
 	err = repository.metrics.Publish(key.TableName(), MetricNameUpdatedItemsCount, float64(1))
 	if err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 	}
 
 	return nil
@@ -139,7 +139,7 @@ func (repository *Repository) UpdateWithContext(expression UpdateExpression, key
 func (repository *Repository) DeleteWithContext(key KeyInterface, ctx context.Context) error {
 
 	if err := isValidKey(key); err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return err
 	}
 	// by hash
@@ -152,13 +152,13 @@ func (repository *Repository) DeleteWithContext(key KeyInterface, ctx context.Co
 
 	err := delete.Run()
 	if err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return err
 	}
 
 	err = repository.metrics.Publish(key.TableName(), MetricNameDeleteItemsCount, float64(1))
 	if err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 	}
 
 	return nil
@@ -169,7 +169,7 @@ func (repository *Repository) DeleteWithContext(key KeyInterface, ctx context.Co
 func (repository *Repository) SaveItemsWithContext(key KeyInterface, items interface{}, ctx context.Context) error {
 
 	if err := isValidKey(key); err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return err
 	}
 
@@ -182,19 +182,19 @@ func (repository *Repository) SaveItemsWithContext(key KeyInterface, items inter
 
 	itemSlice, err := InterfaceToArrayOfInterface(items)
 	if err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return err
 	}
 
 	count, err := batch.Write().Put(itemSlice...).Run()
 	if err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return err
 	}
 
 	err = repository.metrics.Publish(key.TableName(), MetricNameSavedItemsCount, float64(count))
 	if err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 	}
 
 	return nil
@@ -208,7 +208,7 @@ func (repository *Repository) DeleteItemsWithContext(keys []KeyInterface, ctx co
 	}
 	for i := 0; i < len(keys); i++ {
 		if err := isValidKey(keys[i]); err != nil {
-			repository.log.Errorf(keys[i].TableName(), err.Error(), ctx)
+			repository.log.Error(keys[i].TableName(), err.Error(), ctx)
 			return err
 		}
 	}
@@ -227,13 +227,13 @@ func (repository *Repository) DeleteItemsWithContext(keys []KeyInterface, ctx co
 
 	count, err := batch.Write().Delete(dynamoKeys...).Run()
 	if err != nil {
-		repository.log.Errorf(keys[0].TableName(), err.Error(), ctx)
+		repository.log.Error(keys[0].TableName(), err.Error(), ctx)
 		return err
 	}
 
 	err = repository.metrics.Publish(keys[0].TableName(), MetricNameDeleteItemsCount, float64(count))
 	if err != nil {
-		repository.log.Errorf(keys[0].TableName(), err.Error(), nil)
+		repository.log.Error(keys[0].TableName(), err.Error(), nil)
 	}
 
 	return nil
@@ -244,18 +244,18 @@ func (repository *Repository) DeleteItemsWithContext(keys []KeyInterface, ctx co
 // returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 func (repository *Repository) GetItemsWithContext(key KeyInterface, items interface{}, ctx context.Context) (bool, error) {
 	if err := isValidKey(key); err != nil {
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return false, err
 	}
 
 	err := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).All(items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
-			repository.log.Infof(key.TableName(), ErrNoItemFound.Error(), ctx)
+			repository.log.Info(key.TableName(), ErrNoItemFound.Error(), ctx)
 			return false, nil
 		}
 
-		repository.log.Errorf(key.TableName(), err.Error(), ctx)
+		repository.log.Error(key.TableName(), err.Error(), ctx)
 		return false, err
 	}
 

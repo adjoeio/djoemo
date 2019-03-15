@@ -1,9 +1,9 @@
 package examples
 
 import (
-	"adjoe.io/djoemo"
-	"adjoe.io/djoemo/mock"
 	"context"
+	"djoemo"
+	"djoemo/mock"
 	"fmt"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"

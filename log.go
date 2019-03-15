@@ -9,7 +9,7 @@ type logger struct {
 }
 
 // Infof logs info
-func (l logger) Infof(table string, format string, ctx context.Context, args ...interface{}) {
+func (l logger) Info(table string, message string, ctx context.Context) {
 	if l.log == nil {
 		return
 	}
@@ -18,11 +18,11 @@ func (l logger) Infof(table string, format string, ctx context.Context, args ...
 		log = log.WithContext(ctx)
 	}
 
-	log.Infof(format, args)
+	log.Info(message)
 }
 
 // Warnf logs warning
-func (l logger) Warnf(table string, format string, ctx context.Context, args ...interface{}) {
+func (l logger) Warn(table string, message string, ctx context.Context) {
 	if l.log == nil {
 		return
 	}
@@ -32,11 +32,11 @@ func (l logger) Warnf(table string, format string, ctx context.Context, args ...
 		log = log.WithContext(ctx)
 	}
 
-	log.Warnf(format, args)
+	log.Warn(message)
 }
 
 // Errorf logs error
-func (l logger) Errorf(table string, format string, ctx context.Context, args ...interface{}) {
+func (l logger) Error(table string, message string, ctx context.Context) {
 	if l.log == nil {
 		return
 	}
@@ -46,5 +46,5 @@ func (l logger) Errorf(table string, format string, ctx context.Context, args ..
 		log = log.WithContext(ctx)
 	}
 
-	log.Errorf(format, args)
+	log.Error(message)
 }

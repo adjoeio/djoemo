@@ -1,9 +1,9 @@
 package djoemo_test
 
 import (
-	. "adjoe.io/djoemo"
-	"adjoe.io/djoemo/mock"
 	"context"
+	. "djoemo"
+	"djoemo/mock"
 	"errors"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -283,7 +283,7 @@ var _ = Describe("Repository", func() {
 			logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
 			ctx := WithFields(map[string]interface{}{"TraceID": "trace-id", "UUID": "uuid"})
 			logMock.EXPECT().WithContext(ctx).Return(logMock)
-			logMock.EXPECT().Errorf("failed to publish", nil)
+			logMock.EXPECT().Error("failed to publish")
 			err := repository.DeleteItems(keys)
 			Expect(err).To(BeNil())
 		})
