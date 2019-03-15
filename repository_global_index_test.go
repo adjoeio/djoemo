@@ -1,8 +1,8 @@
 package djoemo_test
 
 import (
-	. "adjoe.io/djoemo"
-	"adjoe.io/djoemo/mock"
+	. "djoemo"
+	"djoemo/mock"
 	"errors"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"

@@ -145,15 +145,15 @@ to support debug, it's necessary to provide a logger with this interface
 ```
     // WithFields adds fields from map string interface to logger
     WithFields(fields map[string]interface{}) LogInterface
+        
+    // Warn logs info
+    Info(message string )
     
-    // Infof logs info
-    Infof(format string, args ...interface{})
+    // Warn logs warning
+    Warn(message string )
     
-    // Warnf logs warning
-    Warnf(format string, args ...interface{})
-    
-    // Errorf logs error 
-    Errorf(format string, args ...interface{})
+    // Error logs error
+    Error(message string )
 ```
 
 
