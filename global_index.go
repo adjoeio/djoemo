@@ -28,7 +28,7 @@ func (gi GlobalIndex) Get(key KeyInterface, item interface{}) (bool, error) {
 func (gi GlobalIndex) GetWithContext(key KeyInterface, item interface{}, ctx context.Context) (bool, error) {
 
 	if err := isValidKey(key); err != nil {
-		gi.log.Errorf(key.TableName(), err.Error(), ctx)
+		gi.log.Error(key.TableName(), err.Error(), ctx)
 		return false, err
 	}
 
@@ -43,11 +43,11 @@ func (gi GlobalIndex) GetWithContext(key KeyInterface, item interface{}, ctx con
 	err := query.Index(gi.name).One(item)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
-			gi.log.Infof(key.TableName(), ErrNoItemFound.Error(), ctx)
+			gi.log.Info(key.TableName(), ErrNoItemFound.Error(), ctx)
 			return false, nil
 		}
 
-		gi.log.Errorf(key.TableName(), err.Error(), ctx)
+		gi.log.Error(key.TableName(), err.Error(), ctx)
 		return false, err
 	}
 
@@ -59,18 +59,18 @@ func (gi GlobalIndex) GetWithContext(key KeyInterface, item interface{}, ctx con
 func (gi GlobalIndex) GetItemsWithContext(key KeyInterface, items interface{}, ctx context.Context) (bool, error) {
 
 	if err := isValidKey(key); err != nil {
-		gi.log.Errorf(key.TableName(), err.Error(), ctx)
+		gi.log.Error(key.TableName(), err.Error(), ctx)
 		return false, err
 	}
 
 	err := gi.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).Index(gi.name).All(items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
-			gi.log.Infof(key.TableName(), ErrNoItemFound.Error(), ctx)
+			gi.log.Info(key.TableName(), ErrNoItemFound.Error(), ctx)
 			return false, nil
 		}
 
-		gi.log.Errorf(key.TableName(), err.Error(), ctx)
+		gi.log.Error(key.TableName(), err.Error(), ctx)
 		return false, err
 	}
 

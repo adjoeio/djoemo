@@ -1,14 +1,14 @@
 package djoemo_test
 
 import (
-	"adjoe.io/djoemo/mock"
+	"djoemo/mock"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	"github.com/pkg/errors"
 
 	. "github.com/onsi/gomega"
 
-	. "adjoe.io/djoemo"
+	. "djoemo"
 )
 
 var _ = Describe("Repository", func() {
@@ -261,7 +261,7 @@ var _ = Describe("Repository", func() {
 			logMock.EXPECT().WithContext(ctx).Return(logMock)
 			repository.WithLog(logMock)
 			logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
-			logMock.EXPECT().Errorf(err.Error(), nil)
+			logMock.EXPECT().Error(err.Error())
 			ret := repository.Save(key, user)
 			Expect(ret).To(BeEquivalentTo(err))
 		})
@@ -330,7 +330,7 @@ var _ = Describe("Repository", func() {
 				logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
 				ctx := WithFields(map[string]interface{}{"TraceID": "trace-id", "UUID": "uuid"})
 				logMock.EXPECT().WithContext(ctx).Return(logMock)
-				logMock.EXPECT().Errorf("failed to publish", nil)
+				logMock.EXPECT().Error("failed to publish")
 				err := repository.Save(key, user)
 				Expect(err).To(BeNil())
 			})
@@ -428,7 +428,7 @@ var _ = Describe("Repository", func() {
 				logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
 				ctx := WithFields(map[string]interface{}{"TraceID": "trace-id", "UUID": "uuid"})
 				logMock.EXPECT().WithContext(ctx).Return(logMock)
-				logMock.EXPECT().Errorf("failed to publish", nil)
+				logMock.EXPECT().Error("failed to publish")
 				err := repository.SaveItems(key, users)
 				Expect(err).To(BeNil())
 			})
