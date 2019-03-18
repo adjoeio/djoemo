@@ -1,9 +1,10 @@
 package djoemo_test
 
 import (
-	. "djoemo"
-	"djoemo/mock"
+	"context"
 	"errors"
+	. "github.com/djoemo"
+	"github.com/djoemo/mock"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -195,8 +196,7 @@ var _ = Describe("Repository", func() {
 
 			repository.WithLog(logMock)
 			logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
-			ctx := WithFields(map[string]interface{}{"TraceID": "trace-id", "UUID": "uuid"})
-			logMock.EXPECT().WithContext(ctx).Return(logMock)
+			logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
 			logMock.EXPECT().Error(err.Error())
 			ret := repository.Update(Set, key, updates)
 			Expect(ret).To(BeEquivalentTo(err))
@@ -224,6 +224,7 @@ var _ = Describe("Repository", func() {
 			}
 
 			repository.WithMetrics(metricsMock)
+			metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
 			metricsMock.EXPECT().Publish(key.TableName(), MetricNameUpdatedItemsCount, float64(1)).Return(nil)
 			err := repository.Update(SetSet, key, updates)
 			Expect(err).To(BeNil())
@@ -249,11 +250,11 @@ var _ = Describe("Repository", func() {
 
 			repository.WithMetrics(metricsMock)
 			repository.WithLog(logMock)
+			metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
 			metricsMock.EXPECT().Publish(key.TableName(), MetricNameUpdatedItemsCount, float64(1)).
 				Return(errors.New("failed to publish"))
 			logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
-			ctx := WithFields(map[string]interface{}{"TraceID": "trace-id", "UUID": "uuid"})
-			logMock.EXPECT().WithContext(ctx).Return(logMock)
+			logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
 			logMock.EXPECT().Error("failed to publish")
 			err := repository.Update(SetSet, key, updates)
 			Expect(err).To(BeNil())

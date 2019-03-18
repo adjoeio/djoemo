@@ -2,9 +2,9 @@ package examples
 
 import (
 	"context"
-	"djoemo"
-	"djoemo/mock"
 	"fmt"
+	"github.com/djoemo"
+	"github.com/djoemo/mock"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	"time"
@@ -22,14 +22,14 @@ var (
 type User struct {
 	UserUUID  string
 	Time      time.Time
-	Msg       string              `djoemo:"Message"`
-	Count     int                 `djoemo:",omitempty"`
-	Friends   []string            `djoemo:",set"` // Sets
-	Set       map[string]struct{} `djoemo:",set"` // Map sets, too!
-	SecretKey string              `djoemo:"-"`    // Ignored
+	Msg       string              `dynamo:"Message"`
+	Count     int                 `dynamo:",omitempty"`
+	Friends   []string            `dynamo:",set"` // Sets
+	Set       map[string]struct{} `dynamo:",set"` // Map sets, too!
+	SecretKey string              `dynamo:"-"`    // Ignored
 }
 
-// Get shows an example how to get an item from dynamodb
+// GetItem shows an example how to get an item from dynamodb
 func Get() {
 	// enable log by passing logger interface
 	repository.WithLog(logInterface)
@@ -45,7 +45,7 @@ func Get() {
 		WithHashKey("123")
 
 	// get item
-	found, err := repository.Get(key, user)
+	found, err := repository.GetItem(key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -56,10 +56,11 @@ func Get() {
 
 	// context is optional param, which used to enable log with context
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "TraceInfo", map[string]interface{}{"TraceID": "trace-id"})
+	type TraceInfo string
+	ctx = context.WithValue(ctx, TraceInfo("TraceInfo"), map[string]interface{}{"TraceID": "trace-id"})
 
 	// get item with context to allow trace fields in logger
-	found, err = repository.Get(key, user)
+	found, err = repository.GetItemWithContext(ctx, key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -94,12 +95,8 @@ func GetItems() {
 		fmt.Println("users not found")
 	}
 
-	// context is optional param, which used to enable log with context
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "TraceInfo", map[string]interface{}{"TraceID": "trace-id"})
-
 	// get item with context to allow trace fields in logger
-	found, err = repository.Get(key, users)
+	found, err = repository.GetItem(key, users)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -109,7 +106,7 @@ func GetItems() {
 	}
 }
 
-// Save shows an example, how to save an item
+// SaveItem shows an example, how to save an item
 func Save() {
 	// enable log by passing logger interface
 	repository.WithLog(logInterface)
@@ -125,16 +122,13 @@ func Save() {
 		WithHashKey("123")
 
 	// get item
-	err := repository.Save(key, user)
+	err := repository.SaveItem(key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	// context is optional param, which used to enable log with context
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "TraceInfo", map[string]interface{}{"TraceID": "trace-id"})
 
-	// Save item with context to allow trace fields in logger
-	err = repository.Save(key, user)
+	// SaveItem item with context to allow trace fields in logger
+	err = repository.SaveItem(key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -162,9 +156,6 @@ func SaveItems() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	// context is optional param, which used to enable log with context
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "TraceInfo", map[string]interface{}{"TraceID": "trace-id"})
 
 	// SaveItems item with context to allow trace fields in logger
 	err = repository.SaveItems(key, user)
@@ -197,9 +188,6 @@ func Update() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	// context is optional param, which used to enable log with context
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "TraceInfo", map[string]interface{}{"TraceID": "trace-id"})
 
 	// Update item with context to allow trace fields in logger
 	err = repository.Update(djoemo.Set, key, updates)
@@ -208,7 +196,7 @@ func Update() {
 	}
 }
 
-// Delete shows an example, how to delete item by key
+// DeleteItem shows an example, how to delete item by key
 func Delete() {
 	// enable log by passing logger interface
 	repository.WithLog(logInterface)
@@ -223,16 +211,13 @@ func Delete() {
 		WithHashKey("123")
 
 	// get item
-	err := repository.Delete(key)
+	err := repository.DeleteItem(key)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	// context is optional param, which used to enable log with context
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "TraceInfo", map[string]interface{}{"TraceID": "trace-id"})
 
-	// Delete item with context to allow trace fields in logger
-	err = repository.Delete(key)
+	// DeleteItem item with context to allow trace fields in logger
+	err = repository.DeleteItem(key)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -257,9 +242,6 @@ func DeleteItems() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	// context is optional param, which used to enable log with context
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "TraceInfo", map[string]interface{}{"TraceID": "trace-id"})
 
 	// DeleteItems with context to allow trace fields in logger
 	err = repository.DeleteItems([]djoemo.KeyInterface{key})
@@ -284,7 +266,7 @@ func GetFromGlobalIndex() {
 		WithHashKey("123")
 
 	// get item
-	found, err := repository.GIndex("UserIndex").Get(key, user)
+	found, err := repository.GIndex("UserIndex").GetItem(key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -295,10 +277,11 @@ func GetFromGlobalIndex() {
 
 	// context is optional param, which used to enable log with context
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "TraceInfo", map[string]interface{}{"TraceID": "trace-id"})
+	type TraceInfo string
+	ctx = context.WithValue(ctx, TraceInfo("TraceInfo"), map[string]interface{}{"TraceID": "trace-id"})
 
 	// GIndex item with context to allow trace fields in logger
-	found, err = repository.GIndex("UserIndex").GetWithContext(key, user, ctx)
+	found, err = repository.GIndex("UserIndex").GetItemWithContext(ctx, key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -324,7 +307,7 @@ func GetItemsFromGlobalIndex() {
 		WithHashKey("123")
 
 	// get item
-	found, err := repository.GIndex("UserIndex").Get(key, user)
+	found, err := repository.GIndex("UserIndex").GetItem(key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -335,10 +318,11 @@ func GetItemsFromGlobalIndex() {
 
 	// context is optional param, which used to enable log with context
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "TraceInfo", map[string]interface{}{"TraceID": "trace-id"})
+	type TraceInfo string
+	ctx = context.WithValue(ctx, TraceInfo("TraceInfo"), map[string]interface{}{"TraceID": "trace-id"})
 
 	// GetItems with context to allow trace fields in logger
-	found, err = repository.GIndex("UserIndex").GetItemsWithContext(key, user, ctx)
+	found, err = repository.GIndex("UserIndex").GetItemsWithContext(ctx, key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
