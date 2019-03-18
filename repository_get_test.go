@@ -1,9 +1,9 @@
 package djoemo_test
 
 import (
-	. "djoemo"
-	"djoemo/mock"
 	"errors"
+	. "github.com/djoemo"
+	"github.com/djoemo/mock"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,12 +27,12 @@ var _ = Describe("Repository", func() {
 		repository = NewRepository(dAPIMock)
 	})
 
-	Describe("Get", func() {
-		Describe("Get Invalid key ", func() {
+	Describe("GetItem", func() {
+		Describe("GetItem Invalid key ", func() {
 			It("should fail with table name is nil", func() {
 				key := Key().WithHashKeyName("UUID").WithHashKey("uuid")
 				user := &User{}
-				found, err := repository.Get(key, user)
+				found, err := repository.GetItem(key, user)
 
 				Expect(err).To(Equal(ErrInvalidTableName))
 				Expect(found).To(BeFalse())
@@ -40,7 +40,7 @@ var _ = Describe("Repository", func() {
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
 				user := &User{}
-				found, err := repository.Get(key, user)
+				found, err := repository.GetItem(key, user)
 
 				Expect(err).To(Equal(ErrInvalidHashKeyName))
 				Expect(found).To(BeFalse())
@@ -48,7 +48,7 @@ var _ = Describe("Repository", func() {
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
 				user := &User{}
-				found, err := repository.Get(key, user)
+				found, err := repository.GetItem(key, user)
 
 				Expect(err).To(Equal(ErrInvalidHashKeyValue))
 				Expect(found).To(BeFalse())
@@ -99,7 +99,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				user := &User{}
-				found, err := repository.Get(key, user)
+				found, err := repository.GetItem(key, user)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
@@ -127,7 +127,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				profile := &Profile{}
-				found, err := repository.Get(key, profile)
+				found, err := repository.GetItem(key, profile)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
@@ -148,7 +148,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				user := &User{}
-				found, err := repository.Get(key, user)
+				found, err := repository.GetItem(key, user)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeFalse())
@@ -167,7 +167,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				user := &User{}
-				found, err := repository.Get(key, user)
+				found, err := repository.GetItem(key, user)
 
 				Expect(err).To(BeEquivalentTo(err))
 				Expect(found).To(BeFalse())

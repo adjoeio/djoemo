@@ -195,7 +195,8 @@ to support metrics, it's necessary to provide a metrics publisher with this inte
 
     // context is optional param, which used to enable log with context
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "TraceInfo", map[string]interface{}{"TraceID": "trace-id"})
+	type TraceInfo string
+	ctx = context.WithValue(ctx, TraceInfo("TraceInfo"), map[string]interface{}{"TraceID": "trace-id"})
 
     // get item with extra to allow trace fields in logger
     found, err = repository.GetWithContext(key, user, ctx)

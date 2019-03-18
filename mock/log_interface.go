@@ -6,7 +6,7 @@ package mock
 
 import (
 	context "context"
-	djoemo "djoemo"
+	djoemo "github.com/djoemo"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
@@ -58,32 +58,32 @@ func (mr *MockLogInterfaceMockRecorder) WithFields(fields interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithFields", reflect.TypeOf((*MockLogInterface)(nil).WithFields), fields)
 }
 
-// Info mocks base method
+// info mocks base method
 func (m *MockLogInterface) Info(message string) {
-	m.ctrl.Call(m, "Info", message)
+	m.ctrl.Call(m, "info", message)
 }
 
-// Info indicates an expected call of Info
+// info indicates an expected call of info
 func (mr *MockLogInterfaceMockRecorder) Info(message interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockLogInterface)(nil).Info), message)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "info", reflect.TypeOf((*MockLogInterface)(nil).Info), message)
 }
 
-// Warn mocks base method
+// warn mocks base method
 func (m *MockLogInterface) Warn(message string) {
-	m.ctrl.Call(m, "Warn", message)
+	m.ctrl.Call(m, "warn", message)
 }
 
-// Warn indicates an expected call of Warn
+// warn indicates an expected call of warn
 func (mr *MockLogInterfaceMockRecorder) Warn(message interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warn", reflect.TypeOf((*MockLogInterface)(nil).Warn), message)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "warn", reflect.TypeOf((*MockLogInterface)(nil).Warn), message)
 }
 
-// Error mocks base method
+// error mocks base method
 func (m *MockLogInterface) Error(message string) {
-	m.ctrl.Call(m, "Error", message)
+	m.ctrl.Call(m, "error", message)
 }
 
-// Error indicates an expected call of Error
+// error indicates an expected call of error
 func (mr *MockLogInterfaceMockRecorder) Error(message interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockLogInterface)(nil).Error), message)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "error", reflect.TypeOf((*MockLogInterface)(nil).Error), message)
 }

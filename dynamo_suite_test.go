@@ -8,7 +8,9 @@ import (
 	"time"
 )
 
-const ContextFields string = "ContextFields"
+type ContextFieldsKey = string
+
+const ContextFields ContextFieldsKey = "ContextFields"
 
 func TestDynamo(t *testing.T) {
 	RegisterFailHandler(Fail)

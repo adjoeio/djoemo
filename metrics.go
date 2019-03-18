@@ -1,5 +1,7 @@
 package djoemo
 
+import "context"
+
 const (
 	// MetricNameSavedItemsCount save count metrics key
 	MetricNameSavedItemsCount = "ItemsSavedCount"
@@ -14,9 +16,10 @@ type metrics struct {
 }
 
 // Publish publishes metrics
-func (m metrics) Publish(key string, metricName string, metricValue float64) error {
-	if m.metrics != nil {
-		return m.metrics.Publish(key, metricName, metricValue)
+func (m metrics) Publish(ctx context.Context, key string, metricName string, metricValue float64) error {
+	if m.metrics == nil {
+		return nil
 	}
-	return nil
+
+	return m.metrics.WithContext(ctx).Publish(key, metricName, metricValue)
 }

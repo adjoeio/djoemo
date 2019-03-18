@@ -56,7 +56,7 @@ func (d *DynamoMock) Should() *DynamoMock {
 	return d
 }
 
-// Get register call for DynamoMock GetItemWithContext with its option
+// GetItem register call for DynamoMock GetItemWithContext with its option
 func (d *DynamoMock) Get(opts ...DynamoDBOption) *DynamoMock {
 	for _, opt := range opts {
 		opt(d)
@@ -101,7 +101,7 @@ func (d *DynamoMock) ScanAll(opts ...DynamoDBOption) *DynamoMock {
 	return d.addCall("ScanWithContext", d.scanInput(), d.ScanAllOutput, err)
 }
 
-// Save register call for DynamoMock PutItemWithContext with its option
+// SaveItem register call for DynamoMock PutItemWithContext with its option
 func (d *DynamoMock) Save(opts ...DynamoDBOption) *DynamoMock {
 	for _, opt := range opts {
 		opt(d)

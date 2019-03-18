@@ -10,10 +10,10 @@ type LogInterface interface {
 	WithContext(ctx context.Context) LogInterface
 	// WithFields adds fields from map string interface to logger
 	WithFields(fields map[string]interface{}) LogInterface
-	// Warn logs info
+	// Info logs info
 	Info(message string)
-	// Warn logs warning
+	// warn logs warning
 	Warn(message string)
-	// Error logs error
+	// error logs error
 	Error(message string)
 }

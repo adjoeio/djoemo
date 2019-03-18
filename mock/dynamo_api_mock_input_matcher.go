@@ -23,7 +23,7 @@ dynamoDBMock.EXPECT().PutItem()
 dynamoMock := mocks.NewMockDynamoDBAPI(mockCtrl)
 dmock := mocks.NewDynamoMock(dynamoMock)
 			dmock.Should().
-					Save(
+					SaveItem(
 						dmock.WithTable("TABLENAME"),
 						dmock.WithMatch(
 							mocks.InputExpect().

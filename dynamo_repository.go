@@ -17,6 +17,7 @@ type Repository struct {
 func NewRepository(dynamoClient dynamodbiface.DynamoDBAPI) RepositoryInterface {
 	return &Repository{
 		dynamoClient: dynamo.NewFromIface(dynamoClient),
+		log:          logger{log: nopLog{}},
 	}
 }
 
@@ -30,12 +31,12 @@ func (repository *Repository) WithMetrics(metricsInterface MetricsInterface) {
 	repository.metrics = metrics{metrics: metricsInterface}
 }
 
-// GetWithContext get item; it accepts a key interface that is used to get the table name, hash key and range key if it exists;
+// GetItemWithContext get item; it accepts a key interface that is used to get the table name, hash key and range key if it exists;
 // context which used to enable log with context; the output will be given in item
 // returns true if item is found, returns false and nil if no item found, returns false and an error in case of error
-func (repository *Repository) GetWithContext(key KeyInterface, item interface{}, ctx context.Context) (bool, error) {
+func (repository *Repository) GetItemWithContext(ctx context.Context, key KeyInterface, item interface{}) (bool, error) {
 	if err := isValidKey(key); err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
@@ -47,37 +48,37 @@ func (repository *Repository) GetWithContext(key KeyInterface, item interface{},
 		query = query.Range(*key.RangeKeyName(), dynamo.Equal, key.RangeKey())
 	}
 
-	err := query.One(item)
+	err := query.OneWithContext(ctx, item)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
-			repository.log.Info(key.TableName(), ErrNoItemFound.Error(), ctx)
+			repository.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
 			return false, nil
 		}
 
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
 	return true, nil
 }
 
-// SaveWithContext it accepts a key interface, that is used to get the table name; item is the item to be saved; context which used to enable log with context
+// SaveItemWithContext it accepts a key interface, that is used to get the table name; item is the item to be saved; context which used to enable log with context
 // returns error in case of error
-func (repository *Repository) SaveWithContext(key KeyInterface, item interface{}, ctx context.Context) error {
+func (repository *Repository) SaveItemWithContext(ctx context.Context, key KeyInterface, item interface{}) error {
 	if err := isValidKey(key); err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
-	err := repository.table(key.TableName()).Put(item).Run()
+	err := repository.table(key.TableName()).Put(item).RunWithContext(ctx)
 	if err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
-	err = repository.metrics.Publish(key.TableName(), MetricNameSavedItemsCount, float64(1))
+	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameSavedItemsCount, float64(1))
 	if err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 	}
 
 	return nil
@@ -86,9 +87,9 @@ func (repository *Repository) SaveWithContext(key KeyInterface, item interface{}
 // Update updates item by key; it accepts an expression (Set, SetSet, SetIfNotExists, SetExpr); key is the key to be updated;
 // values contains the values that should be used in the update; context which used to enable log with context
 // returns error in case of error
-func (repository *Repository) UpdateWithContext(expression UpdateExpression, key KeyInterface, values map[string]interface{}, ctx context.Context) error {
+func (repository *Repository) UpdateWithContext(ctx context.Context, expression UpdateExpression, key KeyInterface, values map[string]interface{}) error {
 	if err := isValidKey(key); err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
@@ -113,33 +114,33 @@ func (repository *Repository) UpdateWithContext(expression UpdateExpression, key
 		if expression == SetExpr {
 			valueSlice, err := InterfaceToArrayOfInterface(value)
 			if err != nil {
-				repository.log.Error(key.TableName(), err.Error(), ctx)
+				repository.log.error(ctx, key.TableName(), err.Error())
 				return err
 			}
 			update.SetExpr(expr, valueSlice...)
 		}
 	}
 
-	err := update.Run()
+	err := update.RunWithContext(ctx)
 	if err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
-	err = repository.metrics.Publish(key.TableName(), MetricNameUpdatedItemsCount, float64(1))
+	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameUpdatedItemsCount, float64(1))
 	if err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 	}
 
 	return nil
 }
 
-// Delete item by its key; it accepts key of item to be deleted; context which used to enable log with context
+// DeleteItem item by its key; it accepts key of item to be deleted; context which used to enable log with context
 // returns error in case of error
-func (repository *Repository) DeleteWithContext(key KeyInterface, ctx context.Context) error {
+func (repository *Repository) DeleteItemWithContext(ctx context.Context, key KeyInterface) error {
 
 	if err := isValidKey(key); err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 	// by hash
@@ -150,15 +151,15 @@ func (repository *Repository) DeleteWithContext(key KeyInterface, ctx context.Co
 		delete = delete.Range(*key.RangeKeyName(), key.RangeKey())
 	}
 
-	err := delete.Run()
+	err := delete.RunWithContext(ctx)
 	if err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
-	err = repository.metrics.Publish(key.TableName(), MetricNameDeleteItemsCount, float64(1))
+	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameDeleteItemsCount, float64(1))
 	if err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 	}
 
 	return nil
@@ -166,10 +167,10 @@ func (repository *Repository) DeleteWithContext(key KeyInterface, ctx context.Co
 
 // SaveItems batch save a slice of items by key; it accepts key of item to be saved; item to be saved; context which used to enable log with context
 // returns error in case of error
-func (repository *Repository) SaveItemsWithContext(key KeyInterface, items interface{}, ctx context.Context) error {
+func (repository *Repository) SaveItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) error {
 
 	if err := isValidKey(key); err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
@@ -182,19 +183,19 @@ func (repository *Repository) SaveItemsWithContext(key KeyInterface, items inter
 
 	itemSlice, err := InterfaceToArrayOfInterface(items)
 	if err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
-	count, err := batch.Write().Put(itemSlice...).Run()
+	count, err := batch.Write().Put(itemSlice...).RunWithContext(ctx)
 	if err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
-	err = repository.metrics.Publish(key.TableName(), MetricNameSavedItemsCount, float64(count))
+	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameSavedItemsCount, float64(count))
 	if err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 	}
 
 	return nil
@@ -202,13 +203,13 @@ func (repository *Repository) SaveItemsWithContext(key KeyInterface, items inter
 
 // DeleteItems deletes items matching the keys; it accepts array of keys to be deleted; context which used to enable log with context
 // returns error in case of error
-func (repository *Repository) DeleteItemsWithContext(keys []KeyInterface, ctx context.Context) error {
+func (repository *Repository) DeleteItemsWithContext(ctx context.Context, keys []KeyInterface) error {
 	if len(keys) == 0 {
 		return nil
 	}
 	for i := 0; i < len(keys); i++ {
 		if err := isValidKey(keys[i]); err != nil {
-			repository.log.Error(keys[i].TableName(), err.Error(), ctx)
+			repository.log.error(ctx, keys[i].TableName(), err.Error())
 			return err
 		}
 	}
@@ -225,15 +226,15 @@ func (repository *Repository) DeleteItemsWithContext(keys []KeyInterface, ctx co
 		dynamoKeys[i] = dynamo.Keyed(keys[i])
 	}
 
-	count, err := batch.Write().Delete(dynamoKeys...).Run()
+	count, err := batch.Write().Delete(dynamoKeys...).RunWithContext(ctx)
 	if err != nil {
-		repository.log.Error(keys[0].TableName(), err.Error(), ctx)
+		repository.log.error(ctx, keys[0].TableName(), err.Error())
 		return err
 	}
 
-	err = repository.metrics.Publish(keys[0].TableName(), MetricNameDeleteItemsCount, float64(count))
+	err = repository.metrics.Publish(ctx, keys[0].TableName(), MetricNameDeleteItemsCount, float64(count))
 	if err != nil {
-		repository.log.Error(keys[0].TableName(), err.Error(), nil)
+		repository.log.error(ctx, keys[0].TableName(), err.Error())
 	}
 
 	return nil
@@ -242,64 +243,64 @@ func (repository *Repository) DeleteItemsWithContext(keys []KeyInterface, ctx co
 // GetItemsWithContext by key; it accepts a key interface that is used to get the table name, hash key and range key if it exists;
 // context which used to enable log with context, the output will be given in items
 // returns true if items are found, returns false and nil if no items found, returns false and error in case of error
-func (repository *Repository) GetItemsWithContext(key KeyInterface, items interface{}, ctx context.Context) (bool, error) {
+func (repository *Repository) GetItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error) {
 	if err := isValidKey(key); err != nil {
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
-	err := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).All(items)
+	err := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).AllWithContext(ctx, items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
-			repository.log.Info(key.TableName(), ErrNoItemFound.Error(), ctx)
+			repository.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
 			return false, nil
 		}
 
-		repository.log.Error(key.TableName(), err.Error(), ctx)
+		repository.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
 	return true, nil
 }
 
-// Get get item; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in item
+// GetItem get item; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in item
 // returns true if item is found, returns false and nil if no item found, returns false and an error in case of error
-func (repository Repository) Get(key KeyInterface, item interface{}) (bool, error) {
-	return repository.GetWithContext(key, item, nil)
+func (repository Repository) GetItem(key KeyInterface, item interface{}) (bool, error) {
+	return repository.GetItemWithContext(context.TODO(), key, item)
 }
 
-// Save item; it accepts a key interface, that is used to get the table name; item is the item to be saved
+// SaveItem item; it accepts a key interface, that is used to get the table name; item is the item to be saved
 // returns error in case of error
-func (repository Repository) Save(key KeyInterface, item interface{}) error {
-	return repository.SaveWithContext(key, item, nil)
+func (repository Repository) SaveItem(key KeyInterface, item interface{}) error {
+	return repository.SaveItemWithContext(context.TODO(), key, item)
 }
 
 // Update updates item by key; it accepts an expression (Set, SetSet, SetIfNotExists, SetExpr); key is the key to be updated;
 // values contains the values that should be used in the update;
 // returns error in case of error
 func (repository Repository) Update(expression UpdateExpression, key KeyInterface, values map[string]interface{}) error {
-	return repository.UpdateWithContext(expression, key, values, nil)
+	return repository.UpdateWithContext(context.TODO(), expression, key, values)
 }
 
-// Delete item by key; returns error in case of error
-func (repository Repository) Delete(key KeyInterface) error {
-	return repository.DeleteWithContext(key, nil)
+// DeleteItem item by key; returns error in case of error
+func (repository Repository) DeleteItem(key KeyInterface) error {
+	return repository.DeleteItemWithContext(context.TODO(), key)
 }
 
 // SaveItems batch save a slice of items by key
 func (repository Repository) SaveItems(key KeyInterface, items interface{}) error {
-	return repository.SaveItemsWithContext(key, items, nil)
+	return repository.SaveItemsWithContext(context.TODO(), key, items)
 }
 
 // DeleteItems deletes items matching the keys
 func (repository Repository) DeleteItems(keys []KeyInterface) error {
-	return repository.DeleteItemsWithContext(keys, nil)
+	return repository.DeleteItemsWithContext(context.TODO(), keys)
 }
 
 // GetItems by key; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in items
 // returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 func (repository Repository) GetItems(key KeyInterface, items interface{}) (bool, error) {
-	return repository.GetItemsWithContext(key, items, nil)
+	return repository.GetItemsWithContext(context.TODO(), key, items)
 }
 
 // GIndex creates an index repository by name
