@@ -4,6 +4,8 @@ package djoemo
 type KeyInterface interface {
 	// TableName returns the djoemo table name
 	TableName() string
+	// Index returns the djoemo index to use
+	Index() *string
 	// HashKeyName returns the name of hash key if exists
 	HashKeyName() *string
 	// RangeKeyName returns the name of range key if exists

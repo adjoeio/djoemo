@@ -2,6 +2,7 @@ package djoemo
 
 type key struct {
 	tableName    string
+	index        *string
 	hashKeyName  *string
 	rangeKeyName *string
 	hashKey      interface{}
@@ -16,6 +17,12 @@ func Key() *key {
 // WithTableName set djoemo key table name
 func (k *key) WithTableName(tableName string) *key {
 	k.tableName = tableName
+	return k
+}
+
+// WithIndex set djoemo index
+func (k *key) WithIndex(index *string) *key {
+	k.index = index
 	return k
 }
 
@@ -46,6 +53,11 @@ func (k *key) WithRangeKey(rangeKey interface{}) *key {
 // TableName returns the djoemo table name
 func (k *key) TableName() string {
 	return k.tableName
+}
+
+// Index returns the djoemo index
+func (k *key) Index() *string {
+	return k.index
 }
 
 // HashKeyName returns the name of hash key if exists

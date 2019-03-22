@@ -3,8 +3,8 @@ package examples
 import (
 	"context"
 	"fmt"
-	"github.com/djoemo"
-	"github.com/djoemo/mock"
+	"github.com/adjoeio/djoemo"
+	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	"time"
