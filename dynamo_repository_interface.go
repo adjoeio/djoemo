@@ -67,7 +67,4 @@ type RepositoryInterface interface {
 	// GetItems by key; it accepts key of item to get it; context which used to enable log with context
 	// returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 	GetItemsWithContext(ctx context.Context, key KeyInterface, out interface{}) (bool, error)
-
-	// GIndex returns index repository
-	GIndex(name string) GlobalIndexInterface
 }

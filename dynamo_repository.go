@@ -48,6 +48,11 @@ func (repository *Repository) GetItemWithContext(ctx context.Context, key KeyInt
 		query = query.Range(*key.RangeKeyName(), dynamo.Equal, key.RangeKey())
 	}
 
+	// index
+	if key.Index() != nil {
+		query = query.Index(*key.Index())
+	}
+
 	err := query.OneWithContext(ctx, item)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
@@ -144,14 +149,14 @@ func (repository *Repository) DeleteItemWithContext(ctx context.Context, key Key
 		return err
 	}
 	// by hash
-	delete := repository.table(key.TableName()).Delete(*key.HashKeyName(), key.HashKey())
+	del := repository.table(key.TableName()).Delete(*key.HashKeyName(), key.HashKey())
 
 	// by range
 	if key.RangeKeyName() != nil && key.RangeKey() != nil {
-		delete = delete.Range(*key.RangeKeyName(), key.RangeKey())
+		del = del.Range(*key.RangeKeyName(), key.RangeKey())
 	}
 
-	err := delete.RunWithContext(ctx)
+	err := del.RunWithContext(ctx)
 	if err != nil {
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
@@ -249,7 +254,15 @@ func (repository *Repository) GetItemsWithContext(ctx context.Context, key KeyIn
 		return false, err
 	}
 
-	err := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).AllWithContext(ctx, items)
+	query := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey())
+
+	// index
+	if key.Index() != nil {
+		query = query.Index(*key.Index())
+	}
+
+	err := query.AllWithContext(ctx, items)
+
 	if err != nil {
 		if err == dynamo.ErrNotFound {
 			repository.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
@@ -301,15 +314,6 @@ func (repository Repository) DeleteItems(keys []KeyInterface) error {
 // returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 func (repository Repository) GetItems(key KeyInterface, items interface{}) (bool, error) {
 	return repository.GetItemsWithContext(context.TODO(), key, items)
-}
-
-// GIndex creates an index repository by name
-func (repository Repository) GIndex(name string) GlobalIndexInterface {
-	return GlobalIndex{
-		name:         name,
-		log:          repository.log,
-		dynamoClient: repository.dynamoClient,
-	}
 }
 
 func (repository Repository) table(tableName string) dynamo.Table {

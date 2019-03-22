@@ -2,14 +2,14 @@ package djoemo_test
 
 import (
 	"context"
-	"github.com/djoemo/mock"
+	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	"github.com/pkg/errors"
 
 	. "github.com/onsi/gomega"
 
-	. "github.com/djoemo"
+	. "github.com/adjoeio/djoemo"
 )
 
 var _ = Describe("Repository", func() {
