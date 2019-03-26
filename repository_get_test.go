@@ -2,11 +2,9 @@ package djoemo_test
 
 import (
 	"errors"
-	. "github.com/djoemo"
-	"github.com/djoemo/mock"
+	. "github.com/adjoeio/djoemo"
+	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Repository", func() {
@@ -34,7 +32,7 @@ var _ = Describe("Repository", func() {
 				user := &User{}
 				found, err := repository.GetItem(key, user)
 
-				Expect(err).To(Equal(ErrInvalidTableName))
+				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 				Expect(found).To(BeFalse())
 			})
 			It("should fail with hash key name is nil", func() {
@@ -42,7 +40,7 @@ var _ = Describe("Repository", func() {
 				user := &User{}
 				found, err := repository.GetItem(key, user)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyName))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 				Expect(found).To(BeFalse())
 			})
 			It("should fail with hash key value is nil", func() {
@@ -50,7 +48,7 @@ var _ = Describe("Repository", func() {
 				user := &User{}
 				found, err := repository.GetItem(key, user)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyValue))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 				Expect(found).To(BeFalse())
 			})
 		})
@@ -61,7 +59,7 @@ var _ = Describe("Repository", func() {
 				users := &[]User{}
 				found, err := repository.GetItems(key, users)
 
-				Expect(err).To(Equal(ErrInvalidTableName))
+				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 				Expect(found).To(BeFalse())
 			})
 			It("should fail with hash key name is nil", func() {
@@ -69,7 +67,7 @@ var _ = Describe("Repository", func() {
 				users := &[]User{}
 				found, err := repository.GetItems(key, users)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyName))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 				Expect(found).To(BeFalse())
 			})
 			It("should fail with hash key value is nil", func() {
@@ -77,7 +75,7 @@ var _ = Describe("Repository", func() {
 				users := &[]User{}
 				found, err := repository.GetItems(key, users)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyValue))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 				Expect(found).To(BeFalse())
 			})
 		})
@@ -103,7 +101,7 @@ var _ = Describe("Repository", func() {
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
-				Expect(user.UUID).To(Equal(userDBOutput["UUID"]))
+				Expect(user.UUID).To(BeEqualTo(userDBOutput["UUID"]))
 			})
 
 			It("should get item with Hash and range", func() {
@@ -131,8 +129,8 @@ var _ = Describe("Repository", func() {
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
-				Expect(profile.UUID).To(Equal(profileDBOutput["UUID"]))
-				Expect(profile.Email).To(Equal(profileDBOutput["Email"]))
+				Expect(profile.UUID).To(BeEqualTo(profileDBOutput["UUID"]))
+				Expect(profile.Email).To(BeEqualTo(profileDBOutput["Email"]))
 			})
 
 			It("should return false and nil if item was not found", func() {
@@ -196,8 +194,8 @@ var _ = Describe("Repository", func() {
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
 				result := *users
-				Expect(len(result)).To(Equal(2))
-				Expect(result[0].UUID).To(Equal(userDBOutput[0]["UUID"]))
+				Expect(len(result)).To(BeEqualTo(2))
+				Expect(result[0].UUID).To(BeEqualTo(userDBOutput[0]["UUID"]))
 			})
 
 			It("should get items with Hash and ignore range", func() {
@@ -222,8 +220,8 @@ var _ = Describe("Repository", func() {
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
 				result := *profiles
-				Expect(len(result)).To(Equal(2))
-				Expect(result[0].UUID).To(Equal(profileDBOutput[0]["UUID"]))
+				Expect(len(result)).To(BeEqualTo(2))
+				Expect(result[0].UUID).To(BeEqualTo(profileDBOutput[0]["UUID"]))
 
 			})
 

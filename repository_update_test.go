@@ -3,11 +3,9 @@ package djoemo_test
 import (
 	"context"
 	"errors"
-	. "github.com/djoemo"
-	"github.com/djoemo/mock"
+	. "github.com/adjoeio/djoemo"
+	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Repository", func() {
@@ -41,7 +39,7 @@ var _ = Describe("Repository", func() {
 				}
 
 				err := repository.Update(Set, key, updates)
-				Expect(err).To(Equal(ErrInvalidTableName))
+				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
@@ -51,7 +49,7 @@ var _ = Describe("Repository", func() {
 				}
 
 				err := repository.Update(Set, key, updates)
-				Expect(err).To(Equal(ErrInvalidHashKeyName))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
@@ -61,7 +59,7 @@ var _ = Describe("Repository", func() {
 				}
 
 				err := repository.Update(Set, key, updates)
-				Expect(err).To(Equal(ErrInvalidHashKeyValue))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
 		})
 
@@ -172,7 +170,7 @@ var _ = Describe("Repository", func() {
 			}
 
 			ret := repository.Update(Set, key, updates)
-			Expect(ret).To(Equal(err))
+			Expect(ret).To(BeEqualTo(err))
 		})
 	})
 

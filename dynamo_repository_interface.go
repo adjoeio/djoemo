@@ -68,6 +68,15 @@ type RepositoryInterface interface {
 	// returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 	GetItemsWithContext(ctx context.Context, key KeyInterface, out interface{}) (bool, error)
 
+	// QueryWithContext by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
+	// context which used to enable log with context, the output will be given in items
+	// returns error in case of error
+	QueryWithContext(ctx context.Context, query QueryInterface, item interface{}) error
+
+	// Query by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
+	// returns error in case of error
+	Query(query QueryInterface, item interface{}) error
+
 	// GIndex returns index repository
 	GIndex(name string) GlobalIndexInterface
 }

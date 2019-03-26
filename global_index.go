@@ -79,3 +79,38 @@ func (gi GlobalIndex) GetItemsWithContext(ctx context.Context, key KeyInterface,
 func (gi GlobalIndex) table(tableName string) dynamo.Table {
 	return gi.dynamoClient.Table(tableName)
 }
+
+// QueryWithContext by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
+// context which used to enable log with context, the output will be given in items
+// returns error in case of error
+func (gi GlobalIndex) QueryWithContext(ctx context.Context, query QueryInterface, item interface{}) error {
+
+	if !IsPointerOFSlice(item) {
+		return ErrInvalidPointerSliceType
+	}
+	if err := isValidKey(query); err != nil {
+		gi.log.error(ctx, query.TableName(), err.Error())
+		return err
+	}
+
+	q := gi.table(query.TableName()).Get(*query.HashKeyName(), query.HashKey()).Index(gi.name)
+
+	// by range
+	if query.RangeKeyName() != nil && query.RangeKey() != nil {
+		q = q.Range(*query.RangeKeyName(), dynamo.Operator(query.RangeOp()), query.RangeKey())
+	}
+
+	err := q.AllWithContext(ctx, item)
+	if err != nil {
+		gi.log.error(ctx, query.TableName(), err.Error())
+		return err
+	}
+
+	return nil
+}
+
+// Query by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
+// returns error in case of error
+func (gi GlobalIndex) Query(query QueryInterface, item interface{}) error {
+	return gi.QueryWithContext(context.TODO(), query, item)
+}

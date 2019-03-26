@@ -2,11 +2,9 @@ package djoemo_test
 
 import (
 	"errors"
-	. "github.com/djoemo"
-	"github.com/djoemo/mock"
+	. "github.com/adjoeio/djoemo"
+	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Global Index", func() {
@@ -35,7 +33,7 @@ var _ = Describe("Global Index", func() {
 				user := &User{}
 				found, err := repository.GIndex(IndexName).GetItem(key, user)
 
-				Expect(err).To(Equal(ErrInvalidTableName))
+				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 				Expect(found).To(BeFalse())
 			})
 			It("should fail with hash key name is nil", func() {
@@ -43,7 +41,7 @@ var _ = Describe("Global Index", func() {
 				user := &User{}
 				found, err := repository.GIndex(IndexName).GetItem(key, user)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyName))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 				Expect(found).To(BeFalse())
 			})
 			It("should fail with hash key value is nil", func() {
@@ -51,7 +49,7 @@ var _ = Describe("Global Index", func() {
 				user := &User{}
 				found, err := repository.GIndex(IndexName).GetItem(key, user)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyValue))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 				Expect(found).To(BeFalse())
 			})
 		})
@@ -62,7 +60,7 @@ var _ = Describe("Global Index", func() {
 				users := &[]User{}
 				found, err := repository.GIndex(IndexName).GetItem(key, users)
 
-				Expect(err).To(Equal(ErrInvalidTableName))
+				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 				Expect(found).To(BeFalse())
 			})
 			It("should fail with hash key name is nil", func() {
@@ -70,7 +68,7 @@ var _ = Describe("Global Index", func() {
 				users := &[]User{}
 				found, err := repository.GIndex(IndexName).GetItem(key, users)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyName))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 				Expect(found).To(BeFalse())
 			})
 			It("should fail with hash key value is nil", func() {
@@ -78,7 +76,7 @@ var _ = Describe("Global Index", func() {
 				users := &[]User{}
 				found, err := repository.GIndex(IndexName).GetItem(key, users)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyValue))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 				Expect(found).To(BeFalse())
 			})
 		})
@@ -105,7 +103,7 @@ var _ = Describe("Global Index", func() {
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
-				Expect(user.UUID).To(Equal(userDBOutput["UUID"]))
+				Expect(user.UUID).To(BeEqualTo(userDBOutput["UUID"]))
 			})
 
 			It("should get item with Hash and range", func() {
@@ -134,8 +132,8 @@ var _ = Describe("Global Index", func() {
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
-				Expect(profile.UUID).To(Equal(profileDBOutput["UUID"]))
-				Expect(profile.Email).To(Equal(profileDBOutput["Email"]))
+				Expect(profile.UUID).To(BeEqualTo(profileDBOutput["UUID"]))
+				Expect(profile.Email).To(BeEqualTo(profileDBOutput["Email"]))
 			})
 
 			It("should return false and nil if item was not found", func() {
@@ -203,8 +201,8 @@ var _ = Describe("Global Index", func() {
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
 				result := *users
-				Expect(len(result)).To(Equal(2))
-				Expect(result[0].UUID).To(Equal(userDBOutput[0]["UUID"]))
+				Expect(len(result)).To(BeEqualTo(2))
+				Expect(result[0].UUID).To(BeEqualTo(userDBOutput[0]["UUID"]))
 			})
 
 			It("should get items with Hash and ignore range", func() {
@@ -230,8 +228,8 @@ var _ = Describe("Global Index", func() {
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
 				result := *profiles
-				Expect(len(result)).To(Equal(2))
-				Expect(result[0].UUID).To(Equal(profileDBOutput[0]["UUID"]))
+				Expect(len(result)).To(BeEqualTo(2))
+				Expect(result[0].UUID).To(BeEqualTo(profileDBOutput[0]["UUID"]))
 
 			})
 
@@ -275,6 +273,104 @@ var _ = Describe("Global Index", func() {
 				Expect(found).To(BeFalse())
 			})
 
+		})
+	})
+
+	Describe("Query Items", func() {
+		Describe("Query Items Invalid key ", func() {
+			It("should fail with table name is nil", func() {
+				query := Query().WithHashKeyName("UUID").WithHashKey("uuid")
+				user := &[]User{}
+				err := repository.Query(query, user)
+				Expect(err).To(BeEqualTo(ErrInvalidTableName))
+			})
+			It("should fail with hash key name is nil", func() {
+				query := Query().WithTableName(UserTableName).WithHashKey("uuid")
+				user := &[]User{}
+				err := repository.GIndex(IndexName).Query(query, user)
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
+			})
+			It("should fail with hash key value is nil", func() {
+				query := Query().WithTableName(UserTableName).WithHashKeyName("UUID")
+				user := &[]User{}
+				err := repository.GIndex(IndexName).Query(query, user)
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
+			})
+		})
+
+		Describe("Query Items", func() {
+			It("should query items with Hash", func() {
+				q := Query().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid")
+
+				userDBOutput := map[string]interface{}{
+					"UUID": "uuid",
+				}
+
+				dMock.Should().
+					Query(
+						dMock.WithIndex(IndexName),
+						dMock.WithTable(q.TableName()),
+						dMock.WithCondition(*q.HashKeyName(), q.HashKey(), string(Equal)),
+						dMock.WithQueryOutput(userDBOutput),
+					).Exec()
+
+				var users []User
+				err := repository.GIndex(IndexName).Query(q, &users)
+				Expect(err).To(BeNil())
+				Expect(users[0].UUID).To(BeEqualTo(userDBOutput["UUID"]))
+			})
+
+			It("should query items with hash and range", func() {
+				q := Query().WithTableName(ProfileTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid").
+					WithRangeKeyName("Email").
+					WithRangeKey("user").
+					WithRangeOp(BeginsWith)
+
+				profileDBOutput := []map[string]interface{}{
+					{
+						"UUID":  "uuid1",
+						"Email": "user1@adjeo.io",
+					}, {
+						"UUID":  "uuid2",
+						"Email": "user2@adjeo.io",
+					},
+				}
+
+				dMock.Should().
+					Query(
+						dMock.WithIndex(IndexName),
+						dMock.WithTable(q.TableName()),
+						dMock.WithCondition(*q.HashKeyName(), q.HashKey(), string(Equal)),
+						dMock.WithCondition(*q.RangeKeyName(), q.RangeKey(), string(BeginsWith)),
+						dMock.WithQueryOutput(profileDBOutput),
+					).Exec()
+
+				var profiles []Profile
+				err := repository.GIndex(IndexName).Query(q, &profiles)
+
+				Expect(err).To(BeNil())
+				Expect(len(profiles)).To(BeEqualTo(2))
+				Expect(profiles[0].UUID).To(BeEqualTo("uuid1"))
+				Expect(profiles[1].UUID).To(BeEqualTo("uuid2"))
+			})
+
+			It("should return error if output is not pointer to slice ", func() {
+				q := Query().WithTableName(ProfileTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid").
+					WithRangeKeyName("Email").
+					WithRangeKey("user").
+					WithRangeOp(BeginsWith)
+
+				var profile Profile
+				err := repository.GIndex(IndexName).Query(q, &profile)
+
+				Expect(err).To(BeEquivalentTo(ErrInvalidPointerSliceType))
+			})
 		})
 	})
 })

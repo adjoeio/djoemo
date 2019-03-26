@@ -263,6 +263,35 @@ func (repository *Repository) GetItemsWithContext(ctx context.Context, key KeyIn
 	return true, nil
 }
 
+// QueryWithContext by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
+// context which used to enable log with context, the output will be given in items
+// returns error in case of error
+func (repository *Repository) QueryWithContext(ctx context.Context, query QueryInterface, item interface{}) error {
+
+	if !IsPointerOFSlice(item) {
+		return ErrInvalidPointerSliceType
+	}
+	if err := isValidKey(query); err != nil {
+		repository.log.error(ctx, query.TableName(), err.Error())
+		return err
+	}
+
+	q := repository.table(query.TableName()).Get(*query.HashKeyName(), query.HashKey())
+
+	// by range
+	if query.RangeKeyName() != nil && query.RangeKey() != nil {
+		q = q.Range(*query.RangeKeyName(), dynamo.Operator(query.RangeOp()), query.RangeKey())
+	}
+
+	err := q.AllWithContext(ctx, item)
+	if err != nil {
+		repository.log.error(ctx, query.TableName(), err.Error())
+		return err
+	}
+
+	return nil
+}
+
 // GetItem get item; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in item
 // returns true if item is found, returns false and nil if no item found, returns false and an error in case of error
 func (repository Repository) GetItem(key KeyInterface, item interface{}) (bool, error) {
@@ -301,6 +330,12 @@ func (repository Repository) DeleteItems(keys []KeyInterface) error {
 // returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 func (repository Repository) GetItems(key KeyInterface, items interface{}) (bool, error) {
 	return repository.GetItemsWithContext(context.TODO(), key, items)
+}
+
+// Query by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
+// returns error in case of error
+func (repository Repository) Query(query QueryInterface, item interface{}) error {
+	return repository.QueryWithContext(context.TODO(), query, item)
 }
 
 // GIndex creates an index repository by name
