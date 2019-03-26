@@ -21,3 +21,8 @@ func InterfaceToArrayOfInterface(sliceOfItems interface{}) ([]interface{}, error
 
 	return items, nil
 }
+
+func IsPointerOFSlice(item interface{}) bool {
+	s := reflect.ValueOf(item)
+	return s.Kind() == reflect.Ptr && s.Elem().Kind() == reflect.Slice
+}

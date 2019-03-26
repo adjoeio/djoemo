@@ -3,14 +3,13 @@ package djoemo_test
 import (
 	"context"
 	"errors"
-	. "github.com/djoemo"
-	"github.com/djoemo/mock"
+	. "github.com/adjoeio/djoemo"
+	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Repository", func() {
+
 	const (
 		UserTableName = "UserTable"
 	)
@@ -37,19 +36,19 @@ var _ = Describe("Repository", func() {
 				key := Key().WithHashKeyName("UUID").WithHashKey("uuid")
 
 				err := repository.DeleteItem(key)
-				Expect(err).To(Equal(ErrInvalidTableName))
+				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
 
 				err := repository.DeleteItem(key)
-				Expect(err).To(Equal(ErrInvalidHashKeyName))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
 
 				err := repository.DeleteItem(key)
-				Expect(err).To(Equal(ErrInvalidHashKeyValue))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
 		})
 		It("should delete item by hash key", func() {
@@ -109,7 +108,7 @@ var _ = Describe("Repository", func() {
 				).Exec()
 
 			ret := repository.DeleteItem(key)
-			Expect(ret).To(Equal(err))
+			Expect(ret).To(BeEqualTo(err))
 		})
 	})
 
@@ -121,7 +120,7 @@ var _ = Describe("Repository", func() {
 				keys := []KeyInterface{key, key1}
 
 				err := repository.DeleteItems(keys)
-				Expect(err).To(Equal(ErrInvalidTableName))
+				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
@@ -129,7 +128,7 @@ var _ = Describe("Repository", func() {
 				keys := []KeyInterface{key, key1}
 
 				err := repository.DeleteItems(keys)
-				Expect(err).To(Equal(ErrInvalidHashKeyName))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
@@ -137,7 +136,7 @@ var _ = Describe("Repository", func() {
 				keys := []KeyInterface{key, key1}
 
 				err := repository.DeleteItems(keys)
-				Expect(err).To(Equal(ErrInvalidHashKeyValue))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
 		})
 
@@ -216,7 +215,7 @@ var _ = Describe("Repository", func() {
 				).Exec()
 
 			ret := repository.DeleteItems(keys)
-			Expect(ret).To(Equal(err))
+			Expect(ret).To(BeEqualTo(err))
 		})
 
 		It("should return nil if keys empty", func() {

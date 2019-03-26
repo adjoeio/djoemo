@@ -3,8 +3,8 @@ package examples
 import (
 	"context"
 	"fmt"
-	"github.com/djoemo"
-	"github.com/djoemo/mock"
+	"github.com/adjoeio/djoemo"
+	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	"time"
@@ -103,6 +103,31 @@ func GetItems() {
 
 	if !found {
 		fmt.Println("users not found")
+	}
+}
+
+// Query shows an example, how to query multiple items from dynamodb
+func Query() {
+	// enable log by passing logger interface
+	repository.WithLog(logInterface)
+
+	// enable metrics by passing metrics interface
+	repository.WithMetrics(metricsInterface)
+
+	users := &[]User{}
+	// use factory to create djoemo key interface
+	q := djoemo.Query().
+		WithTableName("user").
+		WithHashKeyName("UserUUID").
+		WithHashKey("123").
+		WithRangeKeyName("Email").
+		WithRangeKey("user@").
+		WithRangeOp(djoemo.BeginsWith)
+
+	// query items
+	err := repository.Query(q, users)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
 }
 

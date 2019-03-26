@@ -2,14 +2,11 @@ package djoemo_test
 
 import (
 	"context"
-	"github.com/djoemo/mock"
+	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
 	"github.com/pkg/errors"
 
-	. "github.com/onsi/gomega"
-
-	. "github.com/djoemo"
+	. "github.com/adjoeio/djoemo"
 )
 
 var _ = Describe("Repository", func() {
@@ -41,7 +38,7 @@ var _ = Describe("Repository", func() {
 					UUID: "uuid",
 				}
 				err := repository.SaveItem(key, user)
-				Expect(err).To(Equal(ErrInvalidTableName))
+				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
@@ -50,7 +47,7 @@ var _ = Describe("Repository", func() {
 				}
 				err := repository.SaveItem(key, user)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyName))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
@@ -59,7 +56,7 @@ var _ = Describe("Repository", func() {
 				}
 				err := repository.SaveItem(key, user)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyValue))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
 		})
 
@@ -103,7 +100,7 @@ var _ = Describe("Repository", func() {
 					},
 				}
 				err := repository.SaveItems(key, users)
-				Expect(err).To(Equal(ErrInvalidTableName))
+				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
@@ -117,7 +114,7 @@ var _ = Describe("Repository", func() {
 				}
 				err := repository.SaveItems(key, users)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyName))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
@@ -131,7 +128,7 @@ var _ = Describe("Repository", func() {
 				}
 				err := repository.SaveItems(key, users)
 
-				Expect(err).To(Equal(ErrInvalidHashKeyValue))
+				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
 		})
 
@@ -187,7 +184,7 @@ var _ = Describe("Repository", func() {
 				UserName: "name1",
 			}
 			err := repository.SaveItems(key, users)
-			Expect(err).To(Equal(ErrInvalidSliceType))
+			Expect(err).To(BeEqualTo(ErrInvalidSliceType))
 		})
 
 		It("should return in err in case of db err", func() {
@@ -229,7 +226,7 @@ var _ = Describe("Repository", func() {
 				},
 			}
 			ret := repository.SaveItems(key, users)
-			Expect(ret).To(Equal(err))
+			Expect(ret).To(BeEqualTo(err))
 		})
 	})
 

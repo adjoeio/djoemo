@@ -16,3 +16,6 @@ var ErrNoItemFound = errors.New("no item found")
 
 //ErrInvalidSliceType interface should be slice error
 var ErrInvalidSliceType = errors.New("invalid type expected slice")
+
+//ErrInvalidPointerSliceType  should be pointer of slice error
+var ErrInvalidPointerSliceType = errors.New("invalid type expected pointer of slice")
