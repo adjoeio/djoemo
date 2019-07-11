@@ -2,9 +2,11 @@ package djoemo_test
 
 import (
 	"errors"
+
 	. "github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
+	"github.com/guregu/dynamo"
 )
 
 var _ = Describe("Repository", func() {
@@ -171,6 +173,27 @@ var _ = Describe("Repository", func() {
 				Expect(found).To(BeFalse())
 			})
 		})
+
+		It("should return false and nil if dynamos ErrNotFound occured", func() {
+			key := Key().WithTableName(UserTableName).
+				WithHashKeyName("UUID").
+				WithHashKey("uuid")
+
+			dMock.Should().
+				Get(
+					dMock.WithTable(key.TableName()),
+					dMock.WithHash(*key.HashKeyName(), key.HashKey()),
+					dMock.WithError(dynamo.ErrNotFound),
+					dMock.WithGetOutput(nil),
+				).Exec()
+
+			user := &User{}
+			found, err := repository.GetItem(key, user)
+
+			Expect(err).To(BeNil())
+			Expect(found).To(BeFalse())
+		})
+
 		Describe("GetItems", func() {
 			It("should get items with Hash", func() {
 				key := Key().WithTableName(UserTableName).
@@ -234,6 +257,26 @@ var _ = Describe("Repository", func() {
 					Query(
 						dMock.WithTable(key.TableName()),
 						dMock.WithCondition(*key.HashKeyName(), key.HashKey(), "EQ"),
+						dMock.WithQueryOutput(nil),
+					).Exec()
+
+				users := &[]User{}
+				found, err := repository.GetItems(key, users)
+
+				Expect(err).To(BeNil())
+				Expect(found).To(BeFalse())
+			})
+
+			It("should return false and nil if dynamos ErrNotFound occured", func() {
+				key := Key().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid")
+
+				dMock.Should().
+					Query(
+						dMock.WithTable(key.TableName()),
+						dMock.WithCondition(*key.HashKeyName(), key.HashKey(), "EQ"),
+						dMock.WithError(dynamo.ErrNotFound),
 						dMock.WithQueryOutput(nil),
 					).Exec()
 
