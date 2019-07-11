@@ -2,6 +2,8 @@ package djoemo
 
 import (
 	"context"
+	"reflect"
+
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/guregu/dynamo"
 )
@@ -84,7 +86,7 @@ func (repository *Repository) SaveItemWithContext(ctx context.Context, key KeyIn
 	return nil
 }
 
-// Update updates item by key; it accepts an expression (Set, SetSet, SetIfNotExists, SetExpr); key is the key to be updated;
+// UpdateWithContext updates item by key; it accepts an expression (Set, SetSet, SetIfNotExists, SetExpr); key is the key to be updated;
 // values contains the values that should be used in the update; context which used to enable log with context
 // returns error in case of error
 func (repository *Repository) UpdateWithContext(ctx context.Context, expression UpdateExpression, key KeyInterface, values map[string]interface{}) error {
@@ -135,7 +137,7 @@ func (repository *Repository) UpdateWithContext(ctx context.Context, expression 
 	return nil
 }
 
-// DeleteItem item by its key; it accepts key of item to be deleted; context which used to enable log with context
+// DeleteItemWithContext item by its key; it accepts key of item to be deleted; context which used to enable log with context
 // returns error in case of error
 func (repository *Repository) DeleteItemWithContext(ctx context.Context, key KeyInterface) error {
 
@@ -165,7 +167,7 @@ func (repository *Repository) DeleteItemWithContext(ctx context.Context, key Key
 	return nil
 }
 
-// SaveItems batch save a slice of items by key; it accepts key of item to be saved; item to be saved; context which used to enable log with context
+// SaveItemsWithContext batch save a slice of items by key; it accepts key of item to be saved; item to be saved; context which used to enable log with context
 // returns error in case of error
 func (repository *Repository) SaveItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) error {
 
@@ -201,7 +203,7 @@ func (repository *Repository) SaveItemsWithContext(ctx context.Context, key KeyI
 	return nil
 }
 
-// DeleteItems deletes items matching the keys; it accepts array of keys to be deleted; context which used to enable log with context
+// DeleteItemsWithContext deletes items matching the keys; it accepts array of keys to be deleted; context which used to enable log with context
 // returns error in case of error
 func (repository *Repository) DeleteItemsWithContext(ctx context.Context, keys []KeyInterface) error {
 	if len(keys) == 0 {
@@ -258,6 +260,17 @@ func (repository *Repository) GetItemsWithContext(ctx context.Context, key KeyIn
 
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return false, err
+	}
+
+	val := reflect.ValueOf(items)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() == reflect.Array || val.Kind() == reflect.Slice {
+		if val.Len() == 0 {
+			return false, nil
+		}
 	}
 
 	return true, nil

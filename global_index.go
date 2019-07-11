@@ -2,6 +2,8 @@ package djoemo
 
 import (
 	"context"
+	"reflect"
+
 	"github.com/guregu/dynamo"
 )
 
@@ -24,7 +26,7 @@ func (gi GlobalIndex) GetItem(key KeyInterface, item interface{}) (bool, error) 
 	return gi.GetItemWithContext(context.TODO(), key, item)
 }
 
-// GetItem item; it needs a key interface that is used to get the table name, hash key, and the range key if it exists; output will be contained in item; context is optional param, which used to enable log with context
+// GetItemWithContext item; it needs a key interface that is used to get the table name, hash key, and the range key if it exists; output will be contained in item; context is optional param, which used to enable log with context
 func (gi GlobalIndex) GetItemWithContext(ctx context.Context, key KeyInterface, item interface{}) (bool, error) {
 
 	if err := isValidKey(key); err != nil {
@@ -55,7 +57,7 @@ func (gi GlobalIndex) GetItemWithContext(ctx context.Context, key KeyInterface, 
 
 }
 
-// GetItems queries multiple items by key (hash key) and returns it in the slice of items items
+// GetItemsWithContext queries multiple items by key (hash key) and returns it in the slice of items items
 func (gi GlobalIndex) GetItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error) {
 	if err := isValidKey(key); err != nil {
 		gi.log.error(ctx, key.TableName(), err.Error())
@@ -71,6 +73,17 @@ func (gi GlobalIndex) GetItemsWithContext(ctx context.Context, key KeyInterface,
 
 		gi.log.error(ctx, key.TableName(), err.Error())
 		return false, err
+	}
+
+	val := reflect.ValueOf(items)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() == reflect.Array || val.Kind() == reflect.Slice {
+		if val.Len() == 0 {
+			return false, nil
+		}
 	}
 
 	return true, nil
