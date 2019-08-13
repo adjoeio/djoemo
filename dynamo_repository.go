@@ -2,7 +2,11 @@ package djoemo
 
 import (
 	"context"
+	"errors"
 	"reflect"
+
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/guregu/dynamo"
@@ -305,6 +309,48 @@ func (repository *Repository) QueryWithContext(ctx context.Context, query QueryI
 	return nil
 }
 
+// OptimisticLockSaveWithContext saves an item if the version attribute on the server matches the version of the object
+func (repository Repository) OptimisticLockSaveWithContext(ctx context.Context, key KeyInterface, item interface{}) (bool, error) {
+	model, isDjoemoModel := item.(ModelInterface)
+	if !isDjoemoModel {
+		return false, errors.New("Items to use with OptimisticLock must implement the ModelInterface")
+	}
+
+	currentVersion := model.GetVersion()
+	model.IncreaseVersion()
+	model.InitCreatedAt()
+	model.InitUpdatedAt()
+
+	update := repository.table(key.TableName()).Put(item).If("attribute_not_exists(Version) OR Version = ?", currentVersion)
+
+	err := update.Run()
+	if err != nil {
+		if awserr, ok := err.(awserr.Error); ok && awserr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
+			repository.log.info(ctx, key.TableName(), dynamodb.ErrCodeConditionalCheckFailedException)
+			return false, nil
+		}
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return false, err
+	}
+	return true, nil
+}
+
+// ConditionalUpdateWithContext updates an item when the condition is met, otherwise the update will be rejected
+func (repository Repository) ConditionalUpdateWithContext(ctx context.Context, key KeyInterface, item interface{}, expression string, expressionArgs ...interface{}) (bool, error) {
+	update := repository.table(key.TableName()).Put(item).If(expression, expressionArgs...)
+
+	err := update.Run()
+	if err != nil {
+		if awserr, ok := err.(awserr.Error); ok && awserr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
+			repository.log.info(ctx, key.TableName(), dynamodb.ErrCodeConditionalCheckFailedException)
+			return false, nil
+		}
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return false, err
+	}
+	return true, nil
+}
+
 // GetItem get item; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in item
 // returns true if item is found, returns false and nil if no item found, returns false and an error in case of error
 func (repository Repository) GetItem(key KeyInterface, item interface{}) (bool, error) {
@@ -351,6 +397,16 @@ func (repository Repository) Query(query QueryInterface, item interface{}) error
 	return repository.QueryWithContext(context.TODO(), query, item)
 }
 
+// OptimisticLockSave updates an item if the version attribute on the server matches the one of the object
+func (repository Repository) OptimisticLockSave(key KeyInterface, item interface{}) (bool, error) {
+	return repository.OptimisticLockSaveWithContext(context.TODO(), key, item)
+}
+
+// ConditionalUpdate updates an item when the condition is met, otherwise the update will be rejected
+func (repository Repository) ConditionalUpdate(key KeyInterface, item interface{}, expression string, expressionArgs ...interface{}) (bool, error) {
+	return repository.ConditionalUpdateWithContext(context.TODO(), key, item, expression, expressionArgs)
+}
+
 // GIndex creates an index repository by name
 func (repository Repository) GIndex(name string) GlobalIndexInterface {
 	return GlobalIndex{
@@ -362,4 +418,26 @@ func (repository Repository) GIndex(name string) GlobalIndexInterface {
 
 func (repository Repository) table(tableName string) dynamo.Table {
 	return repository.dynamoClient.Table(tableName)
+}
+
+// ScanIteratorWithContext returns an instance of an Iterator that provides methods for scanning tables
+func (repository Repository) ScanIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (*Iterator, error) {
+	if err := isValidTableName(key); err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return nil, err
+	}
+
+	scan := repository.table(key.TableName()).Scan()
+	pagingIterator := scan.Iter()
+
+	itr := &Iterator{
+		scan:        scan,
+		tableName:   key.TableName(),
+		searchLimit: searchLimit,
+		iterator:    pagingIterator,
+		ctx:         ctx,
+	}
+	itr.scan.SearchLimit(searchLimit)
+
+	return itr, nil
 }

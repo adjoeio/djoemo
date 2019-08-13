@@ -79,4 +79,19 @@ type RepositoryInterface interface {
 
 	// GIndex returns index repository
 	GIndex(name string) GlobalIndexInterface
+
+	//OptimisticLockSaveWithContext saves an item if the version attribute on the server matches the version of the object
+	OptimisticLockSaveWithContext(ctx context.Context, key KeyInterface, item interface{}) (bool, error)
+
+	//OptimisticLockSave ...
+	OptimisticLockSave(key KeyInterface, item interface{}) (bool, error)
+
+	//ScanIteratorWithContext returns an instance of an iterator that provides methods to use for scanning tables
+	ScanIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (*Iterator, error)
+
+	//ConditionalUpdateWithContext updates an item if the passed expression and condition evaluates to true
+	ConditionalUpdateWithContext(ctx context.Context, key KeyInterface, item interface{}, expression string, expressionArgs ...interface{}) (bool, error)
+
+	//ConditionalUpdate updates an item if the passed expression and condition evaluates to true
+	ConditionalUpdate(key KeyInterface, item interface{}, expression string, expressionArgs ...interface{}) (bool, error)
 }

@@ -3,8 +3,10 @@ package djoemo_test
 import (
 	"context"
 	"errors"
+
 	. "github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/golang/mock/gomock"
 )
 
@@ -171,6 +173,55 @@ var _ = Describe("Repository", func() {
 
 			ret := repository.Update(Set, key, updates)
 			Expect(ret).To(BeEqualTo(err))
+		})
+	})
+
+	Describe("UpdateItem with condition", func() {
+		It("should save an item if the condition is met", func() {
+			key := Key().WithTableName(UserTableName).
+				WithHashKeyName("UUID").
+				WithHashKey("uuid")
+
+			updates := map[string]interface{}{
+				"UserName": "username2",
+			}
+
+			dMock.Should().Save(
+				dMock.WithTable(UserTableName),
+				dMock.WithConditionExpression("UserName = ?", "username"),
+				dMock.WithInput(updates),
+			).Exec()
+
+			expression := "UserName = ?"
+			expressionArgs := "username"
+			updated, err := repository.ConditionalUpdateWithContext(context.Background(), key, updates, expression, expressionArgs)
+
+			Expect(err).To(BeNil())
+			Expect(updated).To(Equal(true))
+		})
+
+		It("should reject the update of an item if the condition is not met", func() {
+			key := Key().WithTableName(UserTableName).
+				WithHashKeyName("UUID").
+				WithHashKey("uuid")
+
+			updates := map[string]interface{}{
+				"UserName": "username",
+			}
+
+			dMock.Should().Save(
+				dMock.WithTable(UserTableName),
+				dMock.WithConditionExpression("UserName = ?", "user"),
+				dMock.WithInput(updates),
+				dMock.WithError(errors.New(dynamodb.ErrCodeConditionalCheckFailedException)),
+			).Exec()
+
+			expression := "UserName = ?"
+			expressionArgs := "user"
+			updated, err := repository.ConditionalUpdateWithContext(context.Background(), key, updates, expression, expressionArgs)
+
+			Expect(err).To(HaveOccurred())
+			Expect(updated).To(Equal(false))
 		})
 	})
 

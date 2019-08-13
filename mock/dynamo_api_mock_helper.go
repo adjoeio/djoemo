@@ -1,39 +1,43 @@
 package mock
 
 import (
+	"reflect"
+	"strconv"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/golang/mock/gomock"
 	"github.com/guregu/dynamo"
-	"reflect"
-	"strconv"
 )
 
 // DynamoMock wrapper for dynamodb mock support configeration function
 type DynamoMock struct {
-	DynamoDBAPIMock  *MockDynamoDBAPI
-	TableName        string
-	Hash             map[string]*dynamodb.AttributeValue
-	Range            map[string]*dynamodb.AttributeValue
-	Index            string
-	GetOutput        *dynamodb.GetItemOutput
-	QueryOutput      *dynamodb.QueryOutput
-	ScanAllOutput    *dynamodb.ScanOutput
-	Input            *dynamodb.PutItemInput
-	DeleteItemInput  *dynamodb.DeleteItemInput
-	Inputs           *dynamodb.BatchWriteItemInput
-	DeleteInputs     *dynamodb.BatchWriteItemInput
-	BatchWriteOutput *dynamodb.BatchWriteItemOutput
-	BatchGetKeys     []map[string]interface{}
-	BatchGetOutput   *dynamodb.BatchGetItemOutput
-	Err              error
-	Times            int
-	Calls            []call
-	Conditions       map[string]*dynamodb.Condition
-	InputMatcher     gomock.Matcher
-	Limit            int64
-	Desc             bool
+	DynamoDBAPIMock           *MockDynamoDBAPI
+	TableName                 string
+	Hash                      map[string]*dynamodb.AttributeValue
+	Range                     map[string]*dynamodb.AttributeValue
+	Index                     string
+	GetOutput                 *dynamodb.GetItemOutput
+	QueryOutput               *dynamodb.QueryOutput
+	ScanAllOutput             *dynamodb.ScanOutput
+	Input                     *dynamodb.PutItemInput
+	DeleteItemInput           *dynamodb.DeleteItemInput
+	Inputs                    *dynamodb.BatchWriteItemInput
+	DeleteInputs              *dynamodb.BatchWriteItemInput
+	BatchWriteOutput          *dynamodb.BatchWriteItemOutput
+	BatchGetKeys              []map[string]interface{}
+	BatchGetOutput            *dynamodb.BatchGetItemOutput
+	Err                       error
+	Times                     int
+	Calls                     []call
+	Conditions                map[string]*dynamodb.Condition
+	InputMatcher              gomock.Matcher
+	Limit                     int64
+	Desc                      bool
+	ConditionExpression       *string
+	ExpressionAttributeValues map[string]*dynamodb.AttributeValue
 }
 
 // NewDynamoMock Factory for DynamoMock wrapper
@@ -56,7 +60,7 @@ func (d *DynamoMock) Should() *DynamoMock {
 	return d
 }
 
-// GetItem register call for DynamoMock GetItemWithContext with its option
+// Get register call for DynamoMock GetItemWithContext with its option
 func (d *DynamoMock) Get(opts ...DynamoDBOption) *DynamoMock {
 	for _, opt := range opts {
 		opt(d)
@@ -101,7 +105,7 @@ func (d *DynamoMock) ScanAll(opts ...DynamoDBOption) *DynamoMock {
 	return d.addCall("ScanWithContext", d.scanInput(), d.ScanAllOutput, err)
 }
 
-// SaveItem register call for DynamoMock PutItemWithContext with its option
+// Save register call for DynamoMock PutItemWithContext with its option
 func (d *DynamoMock) Save(opts ...DynamoDBOption) *DynamoMock {
 	for _, opt := range opts {
 		opt(d)
@@ -201,6 +205,10 @@ func (d *DynamoMock) WithInput(value map[string]interface{}) DynamoDBOption {
 			TableName:    aws.String(d.TableName),
 			ReturnValues: aws.String("NONE"),
 		}
+		if d.ConditionExpression != nil {
+			args.Input.ConditionExpression = d.ConditionExpression
+			args.Input.ExpressionAttributeValues = d.ExpressionAttributeValues
+		}
 		args.InputMatcher = gomock.Eq(args.Input)
 	}
 }
@@ -299,6 +307,18 @@ func (d *DynamoMock) WithCondition(field string, value interface{}, operator str
 			AttributeValueList: l,
 			ComparisonOperator: aws.String(operator),
 		}
+	}
+}
+
+// WithConditionExpression register option dynamodb GetItemOutput
+func (d *DynamoMock) WithConditionExpression(expression string, value interface{}) DynamoDBOption {
+	return func(args *DynamoMock) {
+		d.ExpressionAttributeValues = make(map[string]*dynamodb.AttributeValue)
+		expressionAttributeValueField := ":v0"
+		expression = strings.Replace(expression, "?", expressionAttributeValueField, 1)
+		av, _ := dynamodbattribute.Marshal(value)
+		d.ExpressionAttributeValues[expressionAttributeValueField] = av
+		d.ConditionExpression = &expression
 	}
 }
 
