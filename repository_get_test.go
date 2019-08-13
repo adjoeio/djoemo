@@ -1,6 +1,7 @@
 package djoemo_test
 
 import (
+	"context"
 	"errors"
 
 	. "github.com/adjoeio/djoemo"
@@ -307,5 +308,45 @@ var _ = Describe("Repository", func() {
 			})
 
 		})
+
+		Describe("GetItems with Iterator", func() {
+			It("should return items one-by-one when iterating via NextItem", func() {
+				key := Key().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid")
+				scanLimit := int64(1)
+				scanOutput := []map[string]interface{}{
+					{
+						"UUID":     "uuid",
+						"Email":    "email",
+						"UserName": "user",
+					},
+					{
+						"UUID":     "uuidTwo",
+						"Email":    "emailTwo",
+						"UserName": "userTwo",
+					},
+				}
+
+				dMock.Should().ScanAll(
+					dMock.WithTable(UserTableName),
+					dMock.WithScanAllOutput(scanOutput),
+					dMock.WithLimit(scanLimit),
+				).Exec()
+
+				itr, _ := repository.ScanIteratorWithContext(context.Background(), key, scanLimit)
+
+				user := User{}
+				var users []User
+				for itr.NextItem(&user) {
+					users = append(users, user)
+				}
+
+				Expect(len(users)).To(Equal(2))
+				Expect(users[0].UserName).To(Equal("user"))
+				Expect(users[1].UserName).To(Equal("userTwo"))
+			})
+		})
+
 	})
 })

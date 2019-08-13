@@ -69,15 +69,36 @@ func (k *key) RangeKey() interface{} {
 }
 
 func isValidKey(key KeyInterface) error {
+	if err := isValidTableName(key); err != nil {
+		return err
+	}
+	if err := isValidHashKeyName(key); err != nil {
+		return err
+	}
+	if err := isValidHashKey(key); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func isValidTableName(key KeyInterface) error {
 	if key.TableName() == "" {
 		return ErrInvalidTableName
 	}
+	return nil
+}
+
+func isValidHashKeyName(key KeyInterface) error {
 	if key.HashKeyName() == nil {
 		return ErrInvalidHashKeyName
 	}
+	return nil
+}
+
+func isValidHashKey(key KeyInterface) error {
 	if key.HashKey() == nil {
 		return ErrInvalidHashKeyValue
 	}
-
 	return nil
 }

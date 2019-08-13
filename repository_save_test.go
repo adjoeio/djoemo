@@ -2,7 +2,10 @@ package djoemo_test
 
 import (
 	"context"
+	"time"
+
 	"github.com/adjoeio/djoemo/mock"
+	"github.com/bouk/monkey"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 
@@ -227,6 +230,50 @@ var _ = Describe("Repository", func() {
 			}
 			ret := repository.SaveItems(key, users)
 			Expect(ret).To(BeEqualTo(err))
+		})
+	})
+
+	Describe("Optimistic Lock Save", func() {
+		It("should save an item with optimistic Locking", func() {
+			now := time.Date(2019, 1, 1, 12, 15, 0, 0, time.UTC)
+			monkey.Patch(time.Now, func() time.Time {
+				return now.Time
+			})
+
+			type DjoemoUser struct {
+				Model
+				User
+			}
+			key := Key().WithTableName(UserTableName).
+				WithHashKeyName("UUID").
+				WithHashKey("uuid")
+
+			userDBInput := map[string]interface{}{
+				"UUID":      "uuid",
+				"UserName":  "name1",
+				"UpdatedAt": 1546344900000000000,
+				"CreatedAt": 1546344900000000000,
+				"Version":   1,
+			}
+
+			dMock.Should().
+				Save(
+					dMock.WithTable(key.TableName()),
+					dMock.WithConditionExpression("attribute_not_exists(Version) OR Version = ?", 0),
+					dMock.WithInput(userDBInput),
+				).Exec()
+
+			user := &DjoemoUser{
+				User: User{
+					UUID:     "uuid",
+					UserName: "name1",
+				},
+			}
+
+			saved, err := repository.OptimisticLockSaveWithContext(context.Background(), key, user)
+
+			Expect(err).To(BeNil())
+			Expect(saved).To(BeTrue())
 		})
 	})
 
