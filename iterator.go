@@ -7,6 +7,11 @@ import (
 	"github.com/guregu/dynamo"
 )
 
+// IteratorInterface ...
+type IteratorInterface interface {
+	NextItem(out interface{}) bool
+}
+
 // Iterator ...
 type Iterator struct {
 	scan             *dynamo.Scan

@@ -236,8 +236,9 @@ var _ = Describe("Repository", func() {
 	Describe("Optimistic Lock Save", func() {
 		It("should save an item with optimistic Locking", func() {
 			now := time.Date(2019, 1, 1, 12, 15, 0, 0, time.UTC)
+
 			monkey.Patch(time.Now, func() time.Time {
-				return now.Time
+				return now
 			})
 
 			type DjoemoUser struct {
@@ -259,7 +260,7 @@ var _ = Describe("Repository", func() {
 			dMock.Should().
 				Save(
 					dMock.WithTable(key.TableName()),
-					dMock.WithConditionExpression("attribute_not_exists(Version) OR Version = ?", 0),
+					dMock.WithConditionExpression("(attribute_not_exists(Version) OR Version = ?)", 0),
 					dMock.WithInput(userDBInput),
 				).Exec()
 

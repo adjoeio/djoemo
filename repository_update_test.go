@@ -188,7 +188,7 @@ var _ = Describe("Repository", func() {
 
 			dMock.Should().Save(
 				dMock.WithTable(UserTableName),
-				dMock.WithConditionExpression("UserName = ?", "username"),
+				dMock.WithConditionExpression("(UserName = ?)", "username"),
 				dMock.WithInput(updates),
 			).Exec()
 
@@ -197,7 +197,7 @@ var _ = Describe("Repository", func() {
 			updated, err := repository.ConditionalUpdateWithContext(context.Background(), key, updates, expression, expressionArgs)
 
 			Expect(err).To(BeNil())
-			Expect(updated).To(Equal(true))
+			Expect(updated).To(BeEqualTo(true))
 		})
 
 		It("should reject the update of an item if the condition is not met", func() {
@@ -211,7 +211,7 @@ var _ = Describe("Repository", func() {
 
 			dMock.Should().Save(
 				dMock.WithTable(UserTableName),
-				dMock.WithConditionExpression("UserName = ?", "user"),
+				dMock.WithConditionExpression("(UserName = ?)", "user"),
 				dMock.WithInput(updates),
 				dMock.WithError(errors.New(dynamodb.ErrCodeConditionalCheckFailedException)),
 			).Exec()
@@ -221,7 +221,7 @@ var _ = Describe("Repository", func() {
 			updated, err := repository.ConditionalUpdateWithContext(context.Background(), key, updates, expression, expressionArgs)
 
 			Expect(err).To(HaveOccurred())
-			Expect(updated).To(Equal(false))
+			Expect(updated).To(BeEqualTo(false))
 		})
 	})
 

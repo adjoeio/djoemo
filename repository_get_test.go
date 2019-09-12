@@ -8,6 +8,7 @@ import (
 	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/guregu/dynamo"
+
 )
 
 var _ = Describe("Repository", func() {
@@ -342,9 +343,9 @@ var _ = Describe("Repository", func() {
 					users = append(users, user)
 				}
 
-				Expect(len(users)).To(Equal(2))
-				Expect(users[0].UserName).To(Equal("user"))
-				Expect(users[1].UserName).To(Equal("userTwo"))
+				Expect(len(users)).To(BeEqualTo(2))
+				Expect(users[0].UserName).To(BeEqualTo("user"))
+				Expect(users[1].UserName).To(BeEqualTo("userTwo"))
 			})
 		})
 
