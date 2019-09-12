@@ -87,7 +87,7 @@ type RepositoryInterface interface {
 	OptimisticLockSave(key KeyInterface, item interface{}) (bool, error)
 
 	//ScanIteratorWithContext returns an instance of an iterator that provides methods to use for scanning tables
-	ScanIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (*Iterator, error)
+	ScanIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (IteratorInterface, error)
 
 	//ConditionalUpdateWithContext updates an item if the passed expression and condition evaluates to true
 	ConditionalUpdateWithContext(ctx context.Context, key KeyInterface, item interface{}, expression string, expressionArgs ...interface{}) (bool, error)

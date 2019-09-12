@@ -421,7 +421,7 @@ func (repository Repository) table(tableName string) dynamo.Table {
 }
 
 // ScanIteratorWithContext returns an instance of an Iterator that provides methods for scanning tables
-func (repository Repository) ScanIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (*Iterator, error) {
+func (repository Repository) ScanIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (IteratorInterface, error) {
 	if err := isValidTableName(key); err != nil {
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return nil, err
