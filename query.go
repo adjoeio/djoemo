@@ -18,6 +18,8 @@ const (
 type query struct {
 	key
 	rangeOp Operator
+	descending bool
+	limit *int64
 }
 
 // Key factory method to create struct that implements key interface
@@ -61,10 +63,32 @@ func (q *query) WithRangeOp(rangeOp Operator) *query {
 	return q
 }
 
+// WithLimit set djoemo query limit
+func (q *query) WithLimit(limit int64) *query {
+	q.limit = &limit
+	return q
+}
+
+// WithDescending set djoemo query desnding to true
+func (q *query) WithDescending() *query {
+	q.descending = true
+	return q
+}
+
 // RangeRangeOperator returns the operator used for comparing against the range key
 func (q *query) RangeOp() Operator {
 	if q.rangeOp == "" {
 		return Equal
 	}
 	return q.rangeOp
+}
+
+// Limit returns the result limit
+func (q *query) Limit() *int64 {
+	return q.limit
+}
+
+// Descending returns scan direction
+func (q *query) Descending() bool {
+	return q.descending
 }
