@@ -300,6 +300,14 @@ func (repository *Repository) QueryWithContext(ctx context.Context, query QueryI
 		q = q.Range(*query.RangeKeyName(), dynamo.Operator(query.RangeOp()), query.RangeKey())
 	}
 
+	if query.Limit() != nil {
+		q = q.Limit(*query.Limit())
+	}
+
+	if query.Descending() {
+		q = q.Order(dynamo.Descending)
+	}
+
 	err := q.AllWithContext(ctx, item)
 	if err != nil {
 		repository.log.error(ctx, query.TableName(), err.Error())
