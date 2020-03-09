@@ -153,6 +153,26 @@ var _ = Describe("Repository", func() {
 			err := repository.Update(SetExpr, key, updates)
 			Expect(err).To(BeNil())
 		})
+		It("should Update item with Add", func() {
+			key := Key().WithTableName(UserTableName).
+				WithHashKeyName("UUID").
+				WithHashKey("uuid")
+
+			dMock.Should().Update(
+				dMock.WithTable(key.TableName()),
+				dMock.WithMatch(
+					mock.InputExpect().
+						FieldEq("ElemCount", 1),
+				),
+			).Exec()
+
+			updates := map[string]interface{}{
+				"ElemCount": 1,
+			}
+
+			err := repository.Update(Add, key, updates)
+			Expect(err).To(BeNil())
+		})
 		It("should return in err in case of db err", func() {
 			key := Key().WithTableName(UserTableName).
 				WithHashKeyName("UUID").

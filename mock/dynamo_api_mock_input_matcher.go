@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
@@ -91,7 +92,7 @@ func (i *InputMatcher) matchUpdateItemInput(x interface{}) bool {
 
 	inputItem := x.(*dynamodb.UpdateItemInput)
 	// remove spaces & Set & if_not_exists(Field
-	reg := regexp.MustCompile(`if_not_exists|\(([^ ]+)|\)|SET| `)
+	reg := regexp.MustCompile(`if_not_exists|\(([^ ]+)|\)|SET|ADD| `)
 	updateExpression := reg.ReplaceAllString(*inputItem.UpdateExpression, "")
 	updateExpressions := strings.Split(updateExpression, ",")
 	fieldsValues := make(map[string]interface{})
@@ -99,7 +100,15 @@ func (i *InputMatcher) matchUpdateItemInput(x interface{}) bool {
 	dynamodbattribute.UnmarshalMap(inputItem.ExpressionAttributeValues, &expressionAttributeValues)
 
 	for _, expression := range updateExpressions {
-		keyValue := strings.Split(expression, "=")
+		var keyValue []string
+		if strings.ContainsRune(expression, '='){
+			keyValue = strings.Split(expression, "=")
+		}else{
+			keyValue = strings.Split(expression,":")
+			if len(keyValue) > 0{
+				keyValue[1] = fmt.Sprintf(":%s", keyValue[1])
+			}
+		}
 		fieldsValues[keyValue[0]] = expressionAttributeValues[keyValue[1]]
 	}
 

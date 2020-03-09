@@ -108,6 +108,9 @@ func (repository *Repository) UpdateWithContext(ctx context.Context, expression 
 	}
 
 	for expr, value := range values {
+		if expression == Add {
+			update.Add(expr, value)
+		}
 		if expression == Set {
 			update.Set(expr, value)
 		}
