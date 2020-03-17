@@ -52,6 +52,11 @@ type RepositoryInterface interface {
 	// returns error in case of error
 	UpdateWithContext(ctx context.Context, expression UpdateExpression, key KeyInterface, values map[string]interface{}) error
 
+	// UpdateWithUpdateExpressions updates an item with update expressions defined at field level, enabling you to set
+	// different update expressions for each field. The first key of the updateMap specifies the Update expression to use
+	// for the expressions in the map
+	UpdateWithUpdateExpressions(ctx context.Context, key KeyInterface, updateExpressions UpdateExpressions) error
+
 	// DeleteItem item by its key; it accepts key of item to be deleted; context which used to enable log with context
 	// returns error in case of error
 	DeleteItemWithContext(ctx context.Context, key KeyInterface) error

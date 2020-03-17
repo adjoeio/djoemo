@@ -144,6 +144,64 @@ func (repository *Repository) UpdateWithContext(ctx context.Context, expression 
 	return nil
 }
 
+// UpdateWithUpdateExpressions updates an item with update expressions defined at field level, enabling you to set
+// different update expressions for each field. The first key of the updateMap specifies the Update expression to use
+// for the expressions in the map
+func (repository *Repository) UpdateWithUpdateExpressions(ctx context.Context, key KeyInterface, updateExpressions UpdateExpressions) error {
+	if err := isValidKey(key); err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return err
+	}
+
+	// by hash
+	update := repository.table(key.TableName()).Update(*key.HashKeyName(), key.HashKey())
+
+	// by range
+	if key.RangeKeyName() != nil && key.RangeKey() != nil {
+		update = update.Range(*key.RangeKeyName(), key.RangeKey())
+	}
+
+	for updateExpression, v := range updateExpressions {
+		expression := UpdateExpression(updateExpression)
+
+		for expr, value := range v {
+			if expression == Add {
+				update.Add(expr, value)
+			}
+			if expression == Set {
+				update.Set(expr, value)
+			}
+			if expression == SetSet {
+				update.SetSet(expr, value)
+			}
+			if expression == SetIfNotExists {
+				update.SetIfNotExists(expr, value)
+			}
+			if expression == SetExpr {
+				valueSlice, err := InterfaceToArrayOfInterface(value)
+				if err != nil {
+					repository.log.error(ctx, key.TableName(), err.Error())
+					return err
+				}
+				update.SetExpr(expr, valueSlice...)
+			}
+		}
+	}
+
+	err := update.RunWithContext(ctx)
+	if err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return err
+	}
+
+	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameUpdatedItemsCount, float64(1))
+	if err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+	}
+
+	return nil
+}
+
 // DeleteItemWithContext item by its key; it accepts key of item to be deleted; context which used to enable log with context
 // returns error in case of error
 func (repository *Repository) DeleteItemWithContext(ctx context.Context, key KeyInterface) error {
