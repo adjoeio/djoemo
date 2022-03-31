@@ -144,13 +144,13 @@ func (repository *Repository) UpdateWithContext(ctx context.Context, expression 
 	return nil
 }
 
-// UpdateWithUpdateExpressions updates an item with update expressions defined at field level, enabling you to set
-// different update expressions for each field. The first key of the updateMap specifies the Update expression to use
-// for the expressions in the map
-func (repository *Repository) UpdateWithUpdateExpressions(ctx context.Context, key KeyInterface, updateExpressions UpdateExpressions) error {
+func (repository *Repository) prepareUpdateWithUpdateExpressions(
+	ctx context.Context,
+	key KeyInterface,
+	updateExpressions UpdateExpressions,
+) (*dynamo.Update, error) {
 	if err := isValidKey(key); err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
-		return err
+		return nil, err
 	}
 
 	// by hash
@@ -181,14 +181,31 @@ func (repository *Repository) UpdateWithUpdateExpressions(ctx context.Context, k
 				valueSlice, err := InterfaceToArrayOfInterface(value)
 				if err != nil {
 					repository.log.error(ctx, key.TableName(), err.Error())
-					return err
+					return nil, err
 				}
 				update.SetExpr(expr, valueSlice...)
 			}
 		}
 	}
 
-	err := update.RunWithContext(ctx)
+	return update, nil
+}
+
+// UpdateWithUpdateExpressions updates an item with update expressions defined at field level, enabling you to set
+// different update expressions for each field. The first key of the updateMap specifies the Update expression to use
+// for the expressions in the map
+func (repository *Repository) UpdateWithUpdateExpressions(
+	ctx context.Context,
+	key KeyInterface,
+	updateExpressions UpdateExpressions,
+) error {
+	update, err := repository.prepareUpdateWithUpdateExpressions(ctx, key, updateExpressions)
+	if err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return err
+	}
+
+	err = update.RunWithContext(ctx)
 	if err != nil {
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
@@ -200,6 +217,72 @@ func (repository *Repository) UpdateWithUpdateExpressions(ctx context.Context, k
 	}
 
 	return nil
+}
+
+// UpdateWithUpdateExpressionsAndReturnValue updates an item with update expressions defined at field level and returns
+// the item, as it appears after the update, enabling you to set different update expressions for each field. The first
+// key of the updateMap specifies the Update expression to use for the expressions in the map
+func (repository *Repository) UpdateWithUpdateExpressionsAndReturnValue(
+	ctx context.Context,
+	key KeyInterface,
+	item interface{},
+	updateExpressions UpdateExpressions,
+) error {
+	update, err := repository.prepareUpdateWithUpdateExpressions(ctx, key, updateExpressions)
+	if err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return err
+	}
+
+	err = update.ValueWithContext(ctx, item)
+	if err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return err
+	}
+
+	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameUpdatedItemsCount, float64(1))
+	if err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+	}
+
+	return nil
+}
+
+// ConditionalUpdateWithUpdateExpressionsAndReturnValue updates an item with update expressions and a condition.
+// If the condition is met, the item will be updated and returned as it appears after the update.
+// The first key of the updateMap specifies the Update expression to use for the expressions in the map
+func (repository *Repository) ConditionalUpdateWithUpdateExpressionsAndReturnValue(
+	ctx context.Context,
+	key KeyInterface,
+	item interface{},
+	updateExpressions UpdateExpressions,
+	conditionExpression string,
+	conditionArgs ...interface{},
+) (conditionMet bool, err error) {
+	update, err := repository.prepareUpdateWithUpdateExpressions(ctx, key, updateExpressions)
+	if err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return false, err
+	}
+
+	update = update.If(conditionExpression, conditionArgs...)
+
+	err = update.ValueWithContext(ctx, item)
+	if err != nil {
+		if awsError, ok := err.(awserr.Error); ok && awsError.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
+			repository.log.info(ctx, key.TableName(), dynamodb.ErrCodeConditionalCheckFailedException)
+			return false, nil
+		}
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return false, err
+	}
+
+	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameUpdatedItemsCount, float64(1))
+	if err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+	}
+
+	return true, nil
 }
 
 // DeleteItemWithContext item by its key; it accepts key of item to be deleted; context which used to enable log with context
