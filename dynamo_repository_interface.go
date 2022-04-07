@@ -47,7 +47,7 @@ type RepositoryInterface interface {
 	// returns error in case of error
 	SaveItemWithContext(ctx context.Context, key KeyInterface, item interface{}) error
 
-	// Update updates item by key; it accepts an expression (Set, SetSet, SetIfNotExists, SetExpr); key is the key to be updated;
+	// UpdateWithContext updates item by key; it accepts an expression (Set, SetSet, SetIfNotExists, SetExpr); key is the key to be updated;
 	// values contains the values that should be used in the update; context which used to enable log with context
 	// returns error in case of error
 	UpdateWithContext(ctx context.Context, expression UpdateExpression, key KeyInterface, values map[string]interface{}) error
@@ -57,19 +57,29 @@ type RepositoryInterface interface {
 	// for the expressions in the map
 	UpdateWithUpdateExpressions(ctx context.Context, key KeyInterface, updateExpressions UpdateExpressions) error
 
-	// DeleteItem item by its key; it accepts key of item to be deleted; context which used to enable log with context
+	// UpdateWithUpdateExpressionsAndReturnValue updates an item with update expressions defined at field level and returns
+	// the item, as it appears after the update, enabling you to set different update expressions for each field. The first
+	// key of the updateMap specifies the Update expression to use for the expressions in the map
+	UpdateWithUpdateExpressionsAndReturnValue(ctx context.Context, key KeyInterface, item interface{}, updateExpressions UpdateExpressions) error
+
+	// ConditionalUpdateWithUpdateExpressionsAndReturnValue updates an item with update expressions and a condition.
+	// If the condition is met, the item will be updated and returned as it appears after the update.
+	// The first key of the updateMap specifies the Update expression to use for the expressions in the map
+	ConditionalUpdateWithUpdateExpressionsAndReturnValue(ctx context.Context, key KeyInterface, item interface{}, updateExpressions UpdateExpressions, conditionExpression string, conditionArgs ...interface{}) (conditionMet bool, err error)
+
+	// DeleteItemWithContext item by its key; it accepts key of item to be deleted; context which used to enable log with context
 	// returns error in case of error
 	DeleteItemWithContext(ctx context.Context, key KeyInterface) error
 
-	// SaveItems batch save a slice of items by key; it accepts key of item to be saved; item to be saved; context which used to enable log with context
+	// SaveItemsWithContext batch save a slice of items by key; it accepts key of item to be saved; item to be saved; context which used to enable log with context
 	// returns error in case of error
 	SaveItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) error
 
-	// DeleteItems deletes items matching the keys; it accepts array of keys to be deleted; context which used to enable log with context
+	// DeleteItemsWithContext deletes items matching the keys; it accepts array of keys to be deleted; context which used to enable log with context
 	// returns error in case of error
 	DeleteItemsWithContext(ctx context.Context, key []KeyInterface) error
 
-	// GetItems by key; it accepts key of item to get it; context which used to enable log with context
+	// GetItemsWithContext by key; it accepts key of item to get it; context which used to enable log with context
 	// returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 	GetItemsWithContext(ctx context.Context, key KeyInterface, out interface{}) (bool, error)
 
