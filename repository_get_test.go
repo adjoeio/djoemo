@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	. "github.com/adjoeio/djoemo"
-	"github.com/adjoeio/djoemo/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/guregu/dynamo"
 
+	. "github.com/adjoeio/djoemo"
+	"github.com/adjoeio/djoemo/mock"
 )
 
 var _ = Describe("Repository", func() {
@@ -346,6 +346,121 @@ var _ = Describe("Repository", func() {
 				Expect(len(users)).To(BeEqualTo(2))
 				Expect(users[0].UserName).To(BeEqualTo("user"))
 				Expect(users[1].UserName).To(BeEqualTo("userTwo"))
+			})
+		})
+
+		Describe("GetItems with IteratorWithError", func() {
+			It("should return items one-by-one when iterating via NextItemWithError", func() {
+				key := Key().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid")
+				scanLimit := int64(1)
+				scanOutput := []map[string]interface{}{
+					{
+						"UUID":     "uuid",
+						"Email":    "email",
+						"UserName": "user",
+					},
+					{
+						"UUID":     "uuidTwo",
+						"Email":    "emailTwo",
+						"UserName": "userTwo",
+					},
+				}
+
+				dMock.Should().ScanAll(
+					dMock.WithTable(UserTableName),
+					dMock.WithScanAllOutput(scanOutput),
+					dMock.WithLimit(scanLimit),
+				).Exec()
+
+				itr, _ := repository.ScanIteratorWithContext(context.Background(), key, scanLimit)
+
+				user := User{}
+				var users []User
+				for {
+					next, err := itr.NextItemWithError(&user)
+					Expect(err).ToNot(HaveOccurred())
+					if !next {
+						break
+					}
+					users = append(users, user)
+				}
+
+				Expect(len(users)).To(BeEqualTo(2))
+				Expect(users[0].UserName).To(BeEqualTo("user"))
+				Expect(users[1].UserName).To(BeEqualTo("userTwo"))
+			})
+
+			It("should return error on first item item when iterating via NextItemWithError", func() {
+				key := Key().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid")
+				scanLimit := int64(1)
+				scanOutput := []map[string]interface{}{
+					{
+						"UUID": 1,
+					},
+				}
+
+				dMock.Should().ScanAll(
+					dMock.WithTable(UserTableName),
+					dMock.WithScanAllOutput(scanOutput),
+					dMock.WithLimit(scanLimit),
+				).Exec()
+
+				itr, _ := repository.ScanIteratorWithContext(context.Background(), key, scanLimit)
+
+				user := User{}
+				for {
+					_, err := itr.NextItemWithError(&user)
+					Expect(err).To(HaveOccurred())
+					break
+
+				}
+			})
+
+			It("should return error on second item when iterating via NextItemWithError", func() {
+				key := Key().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid")
+				scanLimit := int64(1)
+				scanOutput := []map[string]interface{}{
+					{
+						"UUID": "uuid",
+					},
+					{
+						"UUID": 1,
+					},
+				}
+
+				dMock.Should().ScanAll(
+					dMock.WithTable(UserTableName),
+					dMock.WithScanAllOutput(scanOutput),
+					dMock.WithLimit(scanLimit),
+				).Exec()
+
+				itr, _ := repository.ScanIteratorWithContext(context.Background(), key, scanLimit)
+
+				user := User{}
+				var users []User
+				var iteration int
+				for {
+					next, err := itr.NextItemWithError(&user)
+					if iteration == 1 {
+						Expect(err).To(HaveOccurred())
+						break
+					}
+
+					Expect(err).ToNot(HaveOccurred())
+					if !next {
+						break
+					}
+					users = append(users, user)
+					iteration++
+				}
+
+				Expect(len(users)).To(BeEqualTo(1))
 			})
 		})
 
