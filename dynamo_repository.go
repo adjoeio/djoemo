@@ -444,8 +444,8 @@ func (repository *Repository) QueryWithContext(ctx context.Context, query QueryI
 		q = q.Range(*query.RangeKeyName(), dynamo.Operator(query.RangeOp()), query.RangeKey())
 	}
 
-	if query.Limit() != nil {
-		q = q.Limit(*query.Limit())
+	if limit := valueFromPtr(query.Limit()); limit > 0 {
+		q = q.Limit(limit)
 	}
 
 	if query.Descending() {

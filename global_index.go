@@ -113,6 +113,14 @@ func (gi GlobalIndex) QueryWithContext(ctx context.Context, query QueryInterface
 		q = q.Range(*query.RangeKeyName(), dynamo.Operator(query.RangeOp()), query.RangeKey())
 	}
 
+	if limit := valueFromPtr(query.Limit()); limit > 0 {
+		q = q.Limit(limit)
+	}
+
+	if query.Descending() {
+		q = q.Order(dynamo.Descending)
+	}
+
 	err := q.AllWithContext(ctx, item)
 	if err != nil {
 		gi.log.error(ctx, query.TableName(), err.Error())

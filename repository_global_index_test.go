@@ -2,9 +2,11 @@ package djoemo_test
 
 import (
 	"errors"
+
+	"github.com/golang/mock/gomock"
+
 	. "github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"
-	"github.com/golang/mock/gomock"
 )
 
 var _ = Describe("Global Index", func() {
@@ -356,6 +358,33 @@ var _ = Describe("Global Index", func() {
 				Expect(len(profiles)).To(BeEqualTo(2))
 				Expect(profiles[0].UUID).To(BeEqualTo("uuid1"))
 				Expect(profiles[1].UUID).To(BeEqualTo("uuid2"))
+			})
+
+			It("should query items with limit and order", func() {
+				q := Query().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid").
+					WithLimit(2).
+					WithDescending()
+
+				userDBOutput := map[string]interface{}{
+					"UUID": "uuid",
+				}
+
+				dMock.Should().
+					Query(
+						dMock.WithIndex(IndexName),
+						dMock.WithTable(q.TableName()),
+						dMock.WithCondition(*q.HashKeyName(), q.HashKey(), string(Equal)),
+						dMock.WithQueryOutput(userDBOutput),
+						dMock.WithLimit(2),
+						dMock.WithDesc(true),
+					).Exec()
+
+				var users []User
+				err := repository.GIndex(IndexName).Query(q, &users)
+				Expect(err).To(BeNil())
+				Expect(users[0].UUID).To(BeEqualTo(userDBOutput["UUID"]))
 			})
 
 			It("should return error if output is not pointer to slice ", func() {
