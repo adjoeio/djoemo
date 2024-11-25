@@ -1,9 +1,10 @@
 package djoemo_test
 
 import (
+	"github.com/golang/mock/gomock"
+
 	. "github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"
-	"github.com/golang/mock/gomock"
 )
 
 var _ = Describe("Repository", func() {
@@ -61,6 +62,32 @@ var _ = Describe("Repository", func() {
 						dMock.WithTable(q.TableName()),
 						dMock.WithCondition(*q.HashKeyName(), q.HashKey(), string(Equal)),
 						dMock.WithQueryOutput(userDBOutput),
+					).Exec()
+
+				var users []User
+				err := repository.Query(q, &users)
+				Expect(err).To(BeNil())
+				Expect(users[0].UUID).To(BeEqualTo(userDBOutput["UUID"]))
+			})
+
+			It("should query items with Hash", func() {
+				q := Query().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid").
+					WithLimit(2).
+					WithDescending()
+
+				userDBOutput := map[string]interface{}{
+					"UUID": "uuid",
+				}
+
+				dMock.Should().
+					Query(
+						dMock.WithTable(q.TableName()),
+						dMock.WithCondition(*q.HashKeyName(), q.HashKey(), string(Equal)),
+						dMock.WithQueryOutput(userDBOutput),
+						dMock.WithLimit(2),
+						dMock.WithDesc(true),
 					).Exec()
 
 				var users []User
