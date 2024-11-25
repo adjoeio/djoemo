@@ -3,11 +3,13 @@ package examples
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/ginkgo/v2"
+
 	"github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"
-	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	"time"
 )
 
 var (

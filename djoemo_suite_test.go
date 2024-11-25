@@ -2,10 +2,11 @@ package djoemo_test
 
 import (
 	"context"
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
 	"testing"
 	"time"
+
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 )
 
 func TestDjoemo(t *testing.T) {
@@ -49,10 +50,6 @@ var FSpecify = ginkgo.FSpecify
 var PSpecify = ginkgo.PSpecify
 var XSpecify = ginkgo.XSpecify
 var By = ginkgo.By
-var Measure = ginkgo.Measure
-var FMeasure = ginkgo.FMeasure
-var PMeasure = ginkgo.PMeasure
-var XMeasure = ginkgo.XMeasure
 var BeforeSuite = ginkgo.BeforeSuite
 var AfterSuite = ginkgo.AfterSuite
 var SynchronizedBeforeSuite = ginkgo.SynchronizedBeforeSuite
@@ -79,7 +76,7 @@ var Eventually = gomega.Eventually
 var Consistently = gomega.Consistently
 
 // Declarations for Gomega Matchers
-//Equal changed to Equal to avoid conflict
+// Equal changed to Equal to avoid conflict
 var BeEqualTo = gomega.Equal
 var BeEquivalentTo = gomega.BeEquivalentTo
 var BeIdenticalTo = gomega.BeIdenticalTo
