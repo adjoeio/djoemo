@@ -7,7 +7,7 @@ package mock
 import (
 	context "context"
 	djoemo "github.com/adjoeio/djoemo"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	reflect "reflect"
 )
 
