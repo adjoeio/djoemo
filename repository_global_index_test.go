@@ -3,7 +3,7 @@ package djoemo_test
 import (
 	"errors"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 
 	. "github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"

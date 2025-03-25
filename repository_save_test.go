@@ -6,8 +6,8 @@ import (
 
 	"github.com/adjoeio/djoemo/mock"
 	"github.com/bouk/monkey"
-	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
+	"go.uber.org/mock/gomock"
 
 	. "github.com/adjoeio/djoemo"
 )

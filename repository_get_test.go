@@ -6,9 +6,8 @@ import (
 
 	. "github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/guregu/dynamo"
-
+	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("Repository", func() {
