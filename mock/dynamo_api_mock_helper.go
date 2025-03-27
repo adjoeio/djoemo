@@ -8,8 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/golang/mock/gomock"
 	"github.com/guregu/dynamo"
+	"go.uber.org/mock/gomock"
 )
 
 // DynamoMock wrapper for dynamodb mock support configeration function
