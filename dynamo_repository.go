@@ -191,6 +191,18 @@ func (repository *Repository) prepareUpdateWithUpdateExpressions(
 	return update, nil
 }
 
+// ConditionalUpdateWithUpdateExpressions updates an item with update expressions and optional conditions defined at field level, enabling you to set
+// different update expressions for each field. The first key of the updateMap specifies the Update expression to use
+// for the expressions in the map
+func (repository *Repository) ConditionalUpdateWithUpdateExpressions(
+	ctx context.Context,
+	key KeyInterface,
+	updateExpressions UpdateExpressions,
+	updateOptions ...UpdateOption,
+) (bool, error) {
+	return repository.updateWithUpdateExpressions(ctx, key, updateExpressions, updateOptions...)
+}
+
 // UpdateWithUpdateExpressions updates an item with update expressions defined at field level, enabling you to set
 // different update expressions for each field. The first key of the updateMap specifies the Update expression to use
 // for the expressions in the map
@@ -199,24 +211,8 @@ func (repository *Repository) UpdateWithUpdateExpressions(
 	key KeyInterface,
 	updateExpressions UpdateExpressions,
 ) error {
-	update, err := repository.prepareUpdateWithUpdateExpressions(ctx, key, updateExpressions)
-	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
-		return err
-	}
-
-	err = update.RunWithContext(ctx)
-	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
-		return err
-	}
-
-	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameUpdatedItemsCount, float64(1))
-	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
-	}
-
-	return nil
+	_, err := repository.updateWithUpdateExpressions(ctx, key, updateExpressions)
+	return err
 }
 
 // UpdateWithUpdateExpressionsAndReturnValue updates an item with update expressions defined at field level and returns
@@ -592,4 +588,39 @@ func (repository Repository) ScanIteratorWithContext(ctx context.Context, key Ke
 	itr.scan.SearchLimit(searchLimit)
 
 	return itr, nil
+}
+
+func (repository *Repository) updateWithUpdateExpressions(
+	ctx context.Context,
+	key KeyInterface,
+	updateExpressions UpdateExpressions,
+	updateOptions ...UpdateOption,
+) (bool, error) {
+	update, err := repository.prepareUpdateWithUpdateExpressions(ctx, key, updateExpressions)
+	if err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return false, err
+	}
+
+	for i := range updateOptions {
+		updateOptions[i](update)
+	}
+
+	err = update.RunWithContext(ctx)
+	if err != nil {
+		if awserr, ok := err.(awserr.Error); ok && awserr.Code() == dynamodb.ErrCodeConditionalCheckFailedException && len(updateOptions) > 0 {
+			repository.log.info(ctx, key.TableName(), dynamodb.ErrCodeConditionalCheckFailedException)
+			return false, nil
+		}
+
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return false, err
+	}
+
+	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameUpdatedItemsCount, float64(1))
+	if err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+	}
+
+	return true, nil
 }
