@@ -1,4 +1,4 @@
-module github.com/adjoeio/djoemo
+module github.com/adjoeio/djoemo/v2
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.38.0

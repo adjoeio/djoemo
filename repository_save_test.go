@@ -8,9 +8,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 
-	"github.com/adjoeio/djoemo/mock"
+	"github.com/adjoeio/djoemo/v2/mock"
 
-	. "github.com/adjoeio/djoemo"
+	. "github.com/adjoeio/djoemo/v2"
 )
 
 var _ = Describe("Repository", func() {

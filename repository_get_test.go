@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	. "github.com/adjoeio/djoemo"
-	"github.com/adjoeio/djoemo/mock"
+	. "github.com/adjoeio/djoemo/v2"
+	"github.com/adjoeio/djoemo/v2/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/guregu/dynamo/v2"
 )

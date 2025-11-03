@@ -1,7 +1,7 @@
 package djoemo_test
 
 import (
-	. "github.com/adjoeio/djoemo"
+	. "github.com/adjoeio/djoemo/v2"
 )
 
 var _ = Describe("ReflectHelper", func() {

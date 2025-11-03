@@ -5,8 +5,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	. "github.com/adjoeio/djoemo"
-	"github.com/adjoeio/djoemo/mock"
+	. "github.com/adjoeio/djoemo/v2"
+	"github.com/adjoeio/djoemo/v2/mock"
 )
 
 var _ = Describe("Global Index", func() {
