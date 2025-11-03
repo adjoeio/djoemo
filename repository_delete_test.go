@@ -3,9 +3,11 @@ package djoemo_test
 import (
 	"context"
 	"errors"
+
+	"github.com/golang/mock/gomock"
+
 	. "github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"
-	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("Repository", func() {

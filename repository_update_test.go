@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/golang/mock/gomock"
+
 	. "github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("Repository", func() {
@@ -233,7 +234,7 @@ var _ = Describe("Repository", func() {
 				dMock.WithTable(UserTableName),
 				dMock.WithConditionExpression("(UserName = ?)", "user"),
 				dMock.WithInput(updates),
-				dMock.WithError(errors.New(dynamodb.ErrCodeConditionalCheckFailedException)),
+				dMock.WithError(errors.New((&types.ConditionalCheckFailedException{}).ErrorCode())),
 			).Exec()
 
 			expression := "UserName = ?"

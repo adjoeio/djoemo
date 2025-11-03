@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/onsi/gomega"
 )
 
@@ -70,12 +70,12 @@ func (i *InputMatcher) FieldEq(name string, value interface{}) *InputMatcher {
 func (i *InputMatcher) matchPutItemInput(x interface{}) bool {
 	inputItem := x.(*dynamodb.PutItemInput)
 	inputFields := make(map[string]interface{})
-	dynamodbattribute.UnmarshalMap(inputItem.Item, &inputFields)
+	attributevalue.UnmarshalMap(inputItem.Item, &inputFields)
 
 	// hack to make sure numric values has the same casting
-	marshalfields, _ := dynamodbattribute.MarshalMap(i.Fields)
+	marshalfields, _ := attributevalue.MarshalMap(i.Fields)
 	fields := make(map[string]interface{})
-	dynamodbattribute.UnmarshalMap(marshalfields, &fields)
+	attributevalue.UnmarshalMap(marshalfields, &fields)
 	for ik, iv := range fields {
 		// if both values are nil pointers, we check different
 		if (inputFields[ik] == nil || (reflect.ValueOf(inputFields[ik]).Kind() == reflect.Ptr && reflect.ValueOf(inputFields[ik]).IsNil())) &&
@@ -97,15 +97,15 @@ func (i *InputMatcher) matchUpdateItemInput(x interface{}) bool {
 	updateExpressions := strings.Split(updateExpression, ",")
 	fieldsValues := make(map[string]interface{})
 	expressionAttributeValues := make(map[string]interface{})
-	dynamodbattribute.UnmarshalMap(inputItem.ExpressionAttributeValues, &expressionAttributeValues)
+	attributevalue.UnmarshalMap(inputItem.ExpressionAttributeValues, &expressionAttributeValues)
 
 	for _, expression := range updateExpressions {
 		var keyValue []string
-		if strings.ContainsRune(expression, '='){
+		if strings.ContainsRune(expression, '=') {
 			keyValue = strings.Split(expression, "=")
-		}else{
-			keyValue = strings.Split(expression,":")
-			if len(keyValue) > 0{
+		} else {
+			keyValue = strings.Split(expression, ":")
+			if len(keyValue) > 0 {
 				keyValue[1] = fmt.Sprintf(":%s", keyValue[1])
 			}
 		}
@@ -113,9 +113,9 @@ func (i *InputMatcher) matchUpdateItemInput(x interface{}) bool {
 	}
 
 	// hack to make sure numric values has the same casting
-	marshalFields, _ := dynamodbattribute.MarshalMap(i.Fields)
+	marshalFields, _ := attributevalue.MarshalMap(i.Fields)
 	fields := make(map[string]interface{})
-	dynamodbattribute.UnmarshalMap(marshalFields, &fields)
+	attributevalue.UnmarshalMap(marshalFields, &fields)
 	for ik, iv := range fields {
 		gomega.Expect(fieldsValues[ik]).Should(gomega.BeEquivalentTo(iv))
 	}

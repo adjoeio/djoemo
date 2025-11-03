@@ -6,20 +6,20 @@ type Operator string
 // Operators used for comparing against the range key.
 const (
 	Equal          Operator = "EQ"
-	NotEqual                = "NE"
-	Less                    = "LT"
-	LessOrEqual             = "LE"
-	Greater                 = "GT"
-	GreaterOrEqual          = "GE"
-	BeginsWith              = "BEGINS_WITH"
-	Between                 = "BETWEEN"
+	NotEqual       Operator = "NE"
+	Less           Operator = "LT"
+	LessOrEqual    Operator = "LE"
+	Greater        Operator = "GT"
+	GreaterOrEqual Operator = "GE"
+	BeginsWith     Operator = "BEGINS_WITH"
+	Between        Operator = "BETWEEN"
 )
 
 type query struct {
 	key
-	rangeOp Operator
+	rangeOp    Operator
 	descending bool
-	limit *int64
+	limit      *int64
 }
 
 // Key factory method to create struct that implements key interface

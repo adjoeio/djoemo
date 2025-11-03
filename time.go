@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 // TimeFormatStandard is a mysql time.Time type with some helper functions
 const TimeFormatStandard = "2006-01-02T15:04:05.000Z07:00"
 
-//TenYears ...
+// TenYears ...
 const TenYears = time.Duration(time.Hour * 24 * 365 * 10)
 
 // RFC3339Milli with millisecond precision
@@ -33,6 +33,7 @@ type DjoemoTime struct {
 }
 
 // Date returns the Time corresponding to
+//
 //	yyyy-mm-dd hh:mm:ss + nsec nanoseconds
 func Date(year int, month time.Month, day, hour, min, sec, nsec int, loc *time.Location) DjoemoTime {
 	return DjoemoTime{Time: time.Date(year, month, day, hour, min, sec, nsec, loc)}
@@ -61,8 +62,7 @@ func (dt DjoemoTime) MarshalJSON() ([]byte, error) {
 	return json.Marshal(dt.Time.Format(TimeFormatStandard))
 }
 
-//MarshalDynamoDBAttributeValue ...
-func (dt *DjoemoTime) MarshalDynamoDBAttributeValue(av *dynamodb.AttributeValue) error {
+func (dt *DjoemoTime) MarshalDynamoDBAttributeValue() (types.AttributeValue, error) {
 	unix := int64(0)
 	if dt != nil {
 		unix = dt.UnixNano()
@@ -77,24 +77,24 @@ func (dt *DjoemoTime) MarshalDynamoDBAttributeValue(av *dynamodb.AttributeValue)
 	}
 
 	s := strconv.FormatInt(unix, 10)
-
-	av.N = &s
-	return nil
+	return &types.AttributeValueMemberN{Value: s}, nil
 }
 
 // UnmarshalDynamoDBAttributeValue ...
-func (dt *DjoemoTime) UnmarshalDynamoDBAttributeValue(av *dynamodb.AttributeValue) error {
+func (dt *DjoemoTime) UnmarshalDynamoDBAttributeValue(av types.AttributeValue) error {
 	// todo: workarround:
 	// https://github.com/golang/go/issues/19486
 	// unix() does set local not to nil "!t(*time.Location=<nil>)}}", but parse does...
 	// causes error while doing equal on object
 	time.Local = nil
 
-	if av.N == nil {
+	number, isNumeric := av.(*types.AttributeValueMemberN)
+
+	if !isNumeric || number == nil {
 		return nil
 	}
 
-	n, err := strconv.ParseInt(*av.N, 10, 64)
+	n, err := strconv.ParseInt(number.Value, 10, 64)
 
 	if err != nil {
 		return err

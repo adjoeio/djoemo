@@ -5,11 +5,9 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"github.com/guregu/dynamo"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/guregu/dynamo/v2"
+	"github.com/guregu/dynamo/v2/dynamodbiface"
 )
 
 // Repository facade for github.com/guregu/djoemo
@@ -54,7 +52,7 @@ func (repository *Repository) GetItemWithContext(ctx context.Context, key KeyInt
 		query = query.Range(*key.RangeKeyName(), dynamo.Equal, key.RangeKey())
 	}
 
-	err := query.OneWithContext(ctx, item)
+	err := query.One(ctx, item)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
 			repository.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
@@ -76,7 +74,7 @@ func (repository *Repository) SaveItemWithContext(ctx context.Context, key KeyIn
 		return err
 	}
 
-	err := repository.table(key.TableName()).Put(item).RunWithContext(ctx)
+	err := repository.table(key.TableName()).Put(item).Run(ctx)
 	if err != nil {
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
@@ -130,7 +128,7 @@ func (repository *Repository) UpdateWithContext(ctx context.Context, expression 
 		}
 	}
 
-	err := update.RunWithContext(ctx)
+	err := update.Run(ctx)
 	if err != nil {
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
@@ -205,7 +203,7 @@ func (repository *Repository) UpdateWithUpdateExpressions(
 		return err
 	}
 
-	err = update.RunWithContext(ctx)
+	err = update.Run(ctx)
 	if err != nil {
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
@@ -234,7 +232,7 @@ func (repository *Repository) UpdateWithUpdateExpressionsAndReturnValue(
 		return err
 	}
 
-	err = update.ValueWithContext(ctx, item)
+	err = update.Value(ctx, item)
 	if err != nil {
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
@@ -267,12 +265,14 @@ func (repository *Repository) ConditionalUpdateWithUpdateExpressionsAndReturnVal
 
 	update = update.If(conditionExpression, conditionArgs...)
 
-	err = update.ValueWithContext(ctx, item)
+	err = update.Value(ctx, item)
 	if err != nil {
-		if awsError, ok := err.(awserr.Error); ok && awsError.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
-			repository.log.info(ctx, key.TableName(), dynamodb.ErrCodeConditionalCheckFailedException)
+		f := new(types.ConditionalCheckFailedException)
+		if errors.As(err, &f) {
+			repository.log.info(ctx, key.TableName(), f.ErrorCode())
 			return false, nil
 		}
+
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
@@ -301,7 +301,7 @@ func (repository *Repository) DeleteItemWithContext(ctx context.Context, key Key
 		delete = delete.Range(*key.RangeKeyName(), key.RangeKey())
 	}
 
-	err := delete.RunWithContext(ctx)
+	err := delete.Run(ctx)
 	if err != nil {
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
@@ -318,7 +318,6 @@ func (repository *Repository) DeleteItemWithContext(ctx context.Context, key Key
 // SaveItemsWithContext batch save a slice of items by key; it accepts key of item to be saved; item to be saved; context which used to enable log with context
 // returns error in case of error
 func (repository *Repository) SaveItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) error {
-
 	if err := isValidKey(key); err != nil {
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
@@ -337,7 +336,7 @@ func (repository *Repository) SaveItemsWithContext(ctx context.Context, key KeyI
 		return err
 	}
 
-	count, err := batch.Write().Put(itemSlice...).RunWithContext(ctx)
+	count, err := batch.Write().Put(itemSlice...).Run(ctx)
 	if err != nil {
 		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
@@ -376,7 +375,7 @@ func (repository *Repository) DeleteItemsWithContext(ctx context.Context, keys [
 		dynamoKeys[i] = dynamo.Keyed(keys[i])
 	}
 
-	count, err := batch.Write().Delete(dynamoKeys...).RunWithContext(ctx)
+	count, err := batch.Write().Delete(dynamoKeys...).Run(ctx)
 	if err != nil {
 		repository.log.error(ctx, keys[0].TableName(), err.Error())
 		return err
@@ -399,7 +398,7 @@ func (repository *Repository) GetItemsWithContext(ctx context.Context, key KeyIn
 		return false, err
 	}
 
-	err := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).AllWithContext(ctx, items)
+	err := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).All(ctx, items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
 			repository.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
@@ -428,7 +427,6 @@ func (repository *Repository) GetItemsWithContext(ctx context.Context, key KeyIn
 // context which used to enable log with context, the output will be given in items
 // returns error in case of error
 func (repository *Repository) QueryWithContext(ctx context.Context, query QueryInterface, item interface{}) error {
-
 	if !IsPointerOFSlice(item) {
 		return ErrInvalidPointerSliceType
 	}
@@ -445,14 +443,14 @@ func (repository *Repository) QueryWithContext(ctx context.Context, query QueryI
 	}
 
 	if limit := valueFromPtr(query.Limit()); limit > 0 {
-		q = q.Limit(limit)
+		q = q.Limit(int(limit))
 	}
 
 	if query.Descending() {
 		q = q.Order(dynamo.Descending)
 	}
 
-	err := q.AllWithContext(ctx, item)
+	err := q.All(ctx, item)
 	if err != nil {
 		repository.log.error(ctx, query.TableName(), err.Error())
 		return err
@@ -475,10 +473,11 @@ func (repository Repository) OptimisticLockSaveWithContext(ctx context.Context, 
 
 	update := repository.table(key.TableName()).Put(item).If("attribute_not_exists(Version) OR Version = ?", currentVersion)
 
-	err := update.Run()
+	err := update.Run(ctx)
 	if err != nil {
-		if awserr, ok := err.(awserr.Error); ok && awserr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
-			repository.log.info(ctx, key.TableName(), dynamodb.ErrCodeConditionalCheckFailedException)
+		f := new(types.ConditionalCheckFailedException)
+		if errors.As(err, &f) {
+			repository.log.info(ctx, key.TableName(), f.ErrorCode())
 			return false, nil
 		}
 		repository.log.error(ctx, key.TableName(), err.Error())
@@ -491,10 +490,11 @@ func (repository Repository) OptimisticLockSaveWithContext(ctx context.Context, 
 func (repository Repository) ConditionalUpdateWithContext(ctx context.Context, key KeyInterface, item interface{}, expression string, expressionArgs ...interface{}) (bool, error) {
 	update := repository.table(key.TableName()).Put(item).If(expression, expressionArgs...)
 
-	err := update.Run()
+	err := update.Run(ctx)
 	if err != nil {
-		if awserr, ok := err.(awserr.Error); ok && awserr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
-			repository.log.info(ctx, key.TableName(), dynamodb.ErrCodeConditionalCheckFailedException)
+		f := new(types.ConditionalCheckFailedException)
+		if errors.As(err, &f) {
+			repository.log.info(ctx, key.TableName(), f.ErrorCode())
 			return false, nil
 		}
 		repository.log.error(ctx, key.TableName(), err.Error())
@@ -589,7 +589,7 @@ func (repository Repository) ScanIteratorWithContext(ctx context.Context, key Ke
 		iterator:    pagingIterator,
 		ctx:         ctx,
 	}
-	itr.scan.SearchLimit(searchLimit)
+	itr.scan.SearchLimit(int(searchLimit))
 
 	return itr, nil
 }

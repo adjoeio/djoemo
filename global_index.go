@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/guregu/dynamo"
+	"github.com/guregu/dynamo/v2"
 )
 
 // GlobalIndex models a global secondary index used in a query
@@ -42,7 +42,7 @@ func (gi GlobalIndex) GetItemWithContext(ctx context.Context, key KeyInterface, 
 		query = query.Range(*key.RangeKeyName(), dynamo.Equal, key.RangeKey())
 	}
 
-	err := query.Index(gi.name).OneWithContext(ctx, item)
+	err := query.Index(gi.name).One(ctx, item)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
 			gi.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
@@ -64,7 +64,7 @@ func (gi GlobalIndex) GetItemsWithContext(ctx context.Context, key KeyInterface,
 		return false, err
 	}
 
-	err := gi.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).Index(gi.name).AllWithContext(ctx, items)
+	err := gi.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).Index(gi.name).All(ctx, items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
 			gi.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
@@ -114,14 +114,14 @@ func (gi GlobalIndex) QueryWithContext(ctx context.Context, query QueryInterface
 	}
 
 	if limit := valueFromPtr(query.Limit()); limit > 0 {
-		q = q.Limit(limit)
+		q = q.Limit(int(limit))
 	}
 
 	if query.Descending() {
 		q = q.Order(dynamo.Descending)
 	}
 
-	err := q.AllWithContext(ctx, item)
+	err := q.All(ctx, item)
 	if err != nil {
 		gi.log.error(ctx, query.TableName(), err.Error())
 		return err

@@ -6,8 +6,8 @@ import (
 
 	. "github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"
-	"github.com/guregu/dynamo"
-	"go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
+	"github.com/guregu/dynamo/v2"
 )
 
 var _ = Describe("Repository", func() {
@@ -246,7 +246,6 @@ var _ = Describe("Repository", func() {
 				result := *profiles
 				Expect(len(result)).To(BeEqualTo(2))
 				Expect(result[0].UUID).To(BeEqualTo(profileDBOutput[0]["UUID"]))
-
 			})
 
 			It("should return false and nil if item was not found", func() {
@@ -306,7 +305,6 @@ var _ = Describe("Repository", func() {
 				Expect(err).To(BeEquivalentTo(err))
 				Expect(found).To(BeFalse())
 			})
-
 		})
 
 		Describe("GetItems with Iterator", func() {
@@ -338,7 +336,13 @@ var _ = Describe("Repository", func() {
 
 				user := User{}
 				var users []User
-				for itr.NextItem(&user) {
+				for {
+					more, err := itr.NextItem(&user)
+
+					if !more || err != nil {
+						break
+					}
+
 					users = append(users, user)
 				}
 
@@ -347,6 +351,5 @@ var _ = Describe("Repository", func() {
 				Expect(users[1].UserName).To(BeEqualTo("userTwo"))
 			})
 		})
-
 	})
 })

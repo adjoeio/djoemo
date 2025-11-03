@@ -2,34 +2,45 @@ package djoemo
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/guregu/dynamo"
+	"github.com/guregu/dynamo/v2"
 )
 
 // IteratorInterface ...
 type IteratorInterface interface {
-	NextItem(out interface{}) bool
+	NextItem(out interface{}) (bool, error)
 }
 
 // Iterator ...
 type Iterator struct {
-	scan             *dynamo.Scan
-	tableName        string
-	searchLimit      int64
-	lastEvaluatedKey map[string]*dynamodb.AttributeValue
-	iterator         dynamo.PagingIter
-	dynamoClient     *dynamo.DB
-	ctx              context.Context
+	scan        *dynamo.Scan
+	tableName   string
+	searchLimit int64
+	iterator    dynamo.PagingIter
+	ctx         context.Context
 }
 
 // NextItem unmarshals the next item into out and returns if there are more items following
-func (itr *Iterator) NextItem(out interface{}) bool {
-	more := itr.iterator.NextWithContext(itr.ctx, out)
-	if !more && itr.iterator.LastEvaluatedKey() != nil {
-		itr.scan = itr.scan.StartFrom(itr.iterator.LastEvaluatedKey())
+func (itr *Iterator) NextItem(out interface{}) (bool, error) {
+	more := itr.iterator.Next(itr.ctx, out)
+	err := itr.iterator.Err()
+	if !more && err == nil {
+		pagingKey, pagingKeyErr := itr.iterator.LastEvaluatedKey(itr.ctx)
+		if pagingKeyErr != nil {
+			return false, fmt.Errorf("failed to get last evaluated key: %w", pagingKeyErr)
+		}
+
+		if pagingKey == nil {
+			return false, nil
+		}
+
+		itr.scan = itr.scan.StartFrom(pagingKey)
 		itr.iterator = itr.scan.Iter()
-		return itr.iterator.NextWithContext(itr.ctx, out)
+
+		more = itr.iterator.Next(itr.ctx, out)
+		err = itr.iterator.Err()
 	}
-	return more
+
+	return more, err
 }
