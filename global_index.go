@@ -34,15 +34,7 @@ func (gi GlobalIndex) GetItemWithContext(ctx context.Context, key KeyInterface, 
 		return false, err
 	}
 
-	// by hash
-	query := gi.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey())
-
-	// by range
-	if key.RangeKeyName() != nil && key.RangeKey() != nil {
-		query = query.Range(*key.RangeKeyName(), dynamo.Equal, key.RangeKey())
-	}
-
-	err := query.Index(gi.name).OneWithContext(ctx, item)
+	err := buildTableKeyCondition(gi.table(key.TableName()), key).Index(gi.name).OneWithContext(ctx, item)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
 			gi.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
@@ -64,7 +56,7 @@ func (gi GlobalIndex) GetItemsWithContext(ctx context.Context, key KeyInterface,
 		return false, err
 	}
 
-	err := gi.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).Index(gi.name).AllWithContext(ctx, items)
+	err := buildTableKeyCondition(gi.table(key.TableName()), key).Index(gi.name).AllWithContext(ctx, items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
 			gi.log.info(ctx, key.TableName(), ErrNoItemFound.Error())

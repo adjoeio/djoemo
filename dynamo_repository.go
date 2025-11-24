@@ -46,15 +46,7 @@ func (repository *Repository) GetItemWithContext(ctx context.Context, key KeyInt
 		return false, err
 	}
 
-	// by hash
-	query := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey())
-
-	// by range
-	if key.RangeKeyName() != nil && key.RangeKey() != nil {
-		query = query.Range(*key.RangeKeyName(), dynamo.Equal, key.RangeKey())
-	}
-
-	err := query.OneWithContext(ctx, item)
+	err := buildTableKeyCondition(repository.table(key.TableName()), key).OneWithContext(ctx, item)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
 			repository.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
@@ -399,7 +391,7 @@ func (repository *Repository) GetItemsWithContext(ctx context.Context, key KeyIn
 		return false, err
 	}
 
-	err := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).AllWithContext(ctx, items)
+	err := buildTableKeyCondition(repository.table(key.TableName()), key).AllWithContext(ctx, items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
 			repository.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
