@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/adjoeio/djoemo/mock"
 	"github.com/bouk/monkey"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
+
+	"github.com/adjoeio/djoemo/mock"
 
 	. "github.com/adjoeio/djoemo"
 )
@@ -341,7 +342,6 @@ var _ = Describe("Repository", func() {
 
 				metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
 				metricsMock.EXPECT().Publish(key.TableName(), MetricNameSavedItemsCount, float64(1)).Return(nil)
-				logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
 				err := repository.SaveItem(key, user)
 				Expect(err).To(BeNil())
 			})
