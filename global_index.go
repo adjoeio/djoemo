@@ -56,6 +56,38 @@ func (gi GlobalIndex) GetItemsWithContext(ctx context.Context, key KeyInterface,
 		return false, err
 	}
 
+	err := gi.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).Index(gi.name).AllWithContext(ctx, items)
+	if err != nil {
+		if err == dynamo.ErrNotFound {
+			gi.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
+			return false, nil
+		}
+
+		gi.log.error(ctx, key.TableName(), err.Error())
+		return false, err
+	}
+
+	val := reflect.ValueOf(items)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() == reflect.Array || val.Kind() == reflect.Slice {
+		if val.Len() == 0 {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// GetItemsWithRangeWithContext queries multiple items by key (hash key) and returns it in the slice of items respecting the range key
+func (gi GlobalIndex) GetItemsWithRangeWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error) {
+	if err := isValidKey(key); err != nil {
+		gi.log.error(ctx, key.TableName(), err.Error())
+		return false, err
+	}
+
 	err := buildTableKeyCondition(gi.table(key.TableName()), key).Index(gi.name).AllWithContext(ctx, items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {

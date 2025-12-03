@@ -15,6 +15,9 @@ type GlobalIndexInterface interface {
 	// returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 	GetItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error)
 
+	// GetItemsWithRangeWithContext same as GetItemsWithContext, but also respects range key
+	GetItemsWithRangeWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error)
+
 	// GetItems by key; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in items
 	// returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 	GetItems(key KeyInterface, items interface{}) (bool, error)

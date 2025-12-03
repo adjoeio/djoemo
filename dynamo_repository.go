@@ -391,7 +391,7 @@ func (repository *Repository) GetItemsWithContext(ctx context.Context, key KeyIn
 		return false, err
 	}
 
-	err := buildTableKeyCondition(repository.table(key.TableName()), key).AllWithContext(ctx, items)
+	err := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).AllWithContext(ctx, items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
 			repository.log.info(ctx, key.TableName(), ErrNoItemFound.Error())

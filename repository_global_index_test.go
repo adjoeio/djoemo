@@ -1,6 +1,7 @@
 package djoemo_test
 
 import (
+	"context"
 	"errors"
 
 	"go.uber.org/mock/gomock"
@@ -238,7 +239,9 @@ var _ = Describe("Global Index", func() {
 			It("should return false and nil if item was not found", func() {
 				key := Key().WithTableName(UserTableName).
 					WithHashKeyName("UUID").
-					WithHashKey("uuid")
+					WithHashKey("uuid").
+					WithRangeKeyName("AppID").
+					WithRangeKey("appid")
 
 				dMock.Should().
 					Query(
@@ -275,6 +278,37 @@ var _ = Describe("Global Index", func() {
 				Expect(found).To(BeFalse())
 			})
 
+		})
+		Describe("GetItemsWithRangeWithContext", func() {
+			It("should get items with Hash and Range", func() {
+				key := Key().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid").
+					WithRangeKeyName("AppID").
+					WithRangeKey("appid")
+
+				userDBOutput := []map[string]interface{}{
+					{"UUID": "uuid", "UserName": "name1"},
+					{"UUID": "uuid", "UserName": "name2"},
+				}
+
+				dMock.Should().
+					Query(
+						dMock.WithTable(key.TableName()),
+						dMock.WithIndex(IndexName),
+						dMock.WithCondition(*key.HashKeyName(), key.HashKey(), "EQ"),
+						dMock.WithCondition(*key.RangeKeyName(), key.RangeKey(), "EQ"),
+						dMock.WithQueryOutput(userDBOutput),
+					).Exec()
+
+				users := &[]User{}
+				found, err := repository.GIndex(IndexName).GetItemsWithRangeWithContext(context.Background(), key, users)
+				Expect(err).To(BeNil())
+				Expect(found).To(BeTrue())
+				result := *users
+				Expect(len(result)).To(BeEqualTo(2))
+				Expect(result[0].UUID).To(BeEqualTo(userDBOutput[0]["UUID"]))
+			})
 		})
 	})
 
