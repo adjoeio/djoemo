@@ -114,8 +114,4 @@ type RepositoryInterface interface {
 	// and fills out (pointer to a slice) with any found items.
 	// returns true if at least one item is found, returns false and nil if no items found, returns false and error in case of error
 	BatchGetItemsWithContext(ctx context.Context, keys []KeyInterface, out interface{}) (bool, error)
-
-	// BatchGetItems gets multiple items by their keys using a background context.
-	// returns true if at least one item is found, returns false and nil if no items found, returns false and error in case of error
-	BatchGetItems(keys []KeyInterface, out interface{}) (bool, error)
 }

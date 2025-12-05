@@ -611,7 +611,7 @@ func (repository *Repository) BatchGetItemsWithContext(ctx context.Context, keys
 	// by hash
 	batch := repository.table(tableName).Batch(*keys[0].HashKeyName())
 	// by hash & range
-	if keys[0].RangeKeyName() != nil {
+	if keys[0].RangeKeyName() != nil && keys[0].RangeKey() != nil {
 		batch = repository.table(tableName).Batch(*keys[0].HashKeyName(), *keys[0].RangeKeyName())
 	}
 
@@ -646,9 +646,4 @@ func (repository *Repository) BatchGetItemsWithContext(ctx context.Context, keys
 	}
 
 	return true, nil
-}
-
-// BatchGetItems gets multiple items using a background context (TODO).
-func (repository *Repository) BatchGetItems(keys []KeyInterface, out interface{}) (bool, error) {
-	return repository.BatchGetItemsWithContext(context.TODO(), keys, out)
 }
