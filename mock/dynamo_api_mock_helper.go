@@ -23,6 +23,7 @@ type DynamoMock struct {
 	QueryOutput               *dynamodb.QueryOutput
 	ScanAllOutput             *dynamodb.ScanOutput
 	Input                     *dynamodb.PutItemInput
+	UpdateItemInput           *dynamodb.UpdateItemInput
 	DeleteItemInput           *dynamodb.DeleteItemInput
 	Inputs                    *dynamodb.BatchWriteItemInput
 	DeleteInputs              *dynamodb.BatchWriteItemInput
@@ -213,6 +214,37 @@ func (d *DynamoMock) WithInput(value map[string]interface{}) DynamoDBOption {
 	}
 }
 
+// WithUpdateItemInput register option dynamodb UpdateItemInput
+func (d *DynamoMock) WithUpdateItemInput(updateExpr string, value interface{}, opts ...UpdateOption) DynamoDBOption {
+	return func(args *DynamoMock) {
+		if d.ExpressionAttributeValues == nil {
+			d.ExpressionAttributeValues = make(map[string]*dynamodb.AttributeValue)
+		}
+
+		expr := d.prepareExpression(updateExpr, value)
+		for i := range expr.avFields {
+			d.ExpressionAttributeValues[expr.avFields[i]] = expr.marshaledAVs[i]
+		}
+
+		args.UpdateItemInput = &dynamodb.UpdateItemInput{
+			Key:              d.Hash,
+			UpdateExpression: &expr.preparedExpr,
+			TableName:        aws.String(d.TableName),
+			ReturnValues:     aws.String("NONE"),
+		}
+		for i := range opts {
+			opts[i](d)
+		}
+
+		args.UpdateItemInput.ExpressionAttributeValues = d.ExpressionAttributeValues
+		if d.ConditionExpression != nil {
+			args.UpdateItemInput.ConditionExpression = d.ConditionExpression
+		}
+
+		args.InputMatcher = gomock.Eq(args.UpdateItemInput)
+	}
+}
+
 // WithInput register option dynamodb PutItemInput
 func (d *DynamoMock) WithDeleteInput(value map[string]interface{}) DynamoDBOption {
 	return func(args *DynamoMock) {
@@ -313,12 +345,16 @@ func (d *DynamoMock) WithCondition(field string, value interface{}, operator str
 // WithConditionExpression register option dynamodb GetItemOutput
 func (d *DynamoMock) WithConditionExpression(expression string, value interface{}) DynamoDBOption {
 	return func(args *DynamoMock) {
-		d.ExpressionAttributeValues = make(map[string]*dynamodb.AttributeValue)
-		expressionAttributeValueField := ":v0"
-		expression = strings.Replace(expression, "?", expressionAttributeValueField, 1)
-		av, _ := dynamodbattribute.Marshal(value)
-		d.ExpressionAttributeValues[expressionAttributeValueField] = av
-		d.ConditionExpression = &expression
+		if d.ExpressionAttributeValues == nil {
+			d.ExpressionAttributeValues = make(map[string]*dynamodb.AttributeValue)
+		}
+
+		expr := d.prepareExpression(expression, value)
+		for i := range expr.avFields {
+			d.ExpressionAttributeValues[expr.avFields[i]] = expr.marshaledAVs[i]
+		}
+
+		d.ConditionExpression = &expr.preparedExpr
 	}
 }
 
@@ -521,6 +557,28 @@ func (d *DynamoMock) addCall(method string, input interface{}, output interface{
 	return d
 }
 
+func (d *DynamoMock) prepareExpression(expr string, values ...interface{}) preparedExpression {
+	currentAttributeStartIndex := len(d.ExpressionAttributeValues)
+
+	avFields := make([]string, 0, len(values))
+	marshaledAVs := make([]*dynamodb.AttributeValue, 0, len(values))
+
+	for i, val := range values {
+		expressionAttributeValueField := ":v" + strconv.Itoa(currentAttributeStartIndex+i)
+		expr = strings.Replace(expr, "?", expressionAttributeValueField, 1)
+
+		avFields = append(avFields, expressionAttributeValueField)
+		av, _ := dynamodbattribute.Marshal(val)
+		marshaledAVs = append(marshaledAVs, av)
+	}
+
+	return preparedExpression{
+		avFields:     avFields,
+		preparedExpr: expr,
+		marshaledAVs: marshaledAVs,
+	}
+}
+
 // getAttributeValue return dynamodb.AttributeValue from interface type
 func getAttributeValue(value interface{}) *dynamodb.AttributeValue {
 	attributeValue := dynamodb.AttributeValue{}
@@ -548,4 +606,27 @@ type call struct {
 	input  interface{}
 	output interface{}
 	err    interface{}
+}
+
+type preparedExpression struct {
+	avFields     []string
+	preparedExpr string
+	marshaledAVs []*dynamodb.AttributeValue
+}
+
+type UpdateOption func(m *DynamoMock)
+
+func WithCondition(conditionExpression string, conditionArgs ...interface{}) func(m *DynamoMock) {
+	return func(m *DynamoMock) {
+		if m.ExpressionAttributeValues == nil {
+			m.ExpressionAttributeValues = make(map[string]*dynamodb.AttributeValue)
+		}
+
+		expr := m.prepareExpression(conditionExpression, conditionArgs...)
+		for i := range expr.avFields {
+			m.ExpressionAttributeValues[expr.avFields[i]] = expr.marshaledAVs[i]
+		}
+
+		m.ConditionExpression = &expr.preparedExpr
+	}
 }

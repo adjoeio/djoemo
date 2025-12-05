@@ -57,6 +57,10 @@ type RepositoryInterface interface {
 	// for the expressions in the map
 	UpdateWithUpdateExpressions(ctx context.Context, key KeyInterface, updateExpressions UpdateExpressions) error
 
+	// ConditionalUpdateWithUpdateExpressions updates an item with update expressions and optional conditions defined at field level
+	// if no conditions were provided within UpdateOption, a normal update will be performed
+	ConditionalUpdateWithUpdateExpressions(ctx context.Context, key KeyInterface, updateExpressions UpdateExpressions, updateOptions ...UpdateOption) (bool, error)
+
 	// UpdateWithUpdateExpressionsAndReturnValue updates an item with update expressions defined at field level and returns
 	// the item, as it appears after the update, enabling you to set different update expressions for each field. The first
 	// key of the updateMap specifies the Update expression to use for the expressions in the map

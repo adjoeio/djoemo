@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 
-	. "github.com/adjoeio/djoemo"
-	"github.com/adjoeio/djoemo/mock"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"go.uber.org/mock/gomock"
+
+	. "github.com/adjoeio/djoemo"
+	"github.com/adjoeio/djoemo/mock"
 )
 
 var _ = Describe("Repository", func() {
@@ -245,88 +247,149 @@ var _ = Describe("Repository", func() {
 		})
 	})
 
-	Describe("Log", func() {
-		It("should log with extra fields if log is supported", func() {
+	Describe("ConditionalUpdateWithUpdateExpressions", func() {
+		It("should update an item if the condition is met", func() {
+			hashKey := "uuid"
+			oldUsername := "username"
+			newUsername := "username2"
+
 			key := Key().WithTableName(UserTableName).
 				WithHashKeyName("UUID").
-				WithHashKey("uuid").
-				WithRangeKeyName("email").
-				WithRangeKey("mail@adjoe.io")
-			err := errors.New("failed to update item")
-			dMock.Should().Update(
-				dMock.WithTable(key.TableName()),
-				dMock.WithError(err),
-			).Exec()
+				WithHashKey(hashKey)
 
 			updates := map[string]interface{}{
-				"UserName": "name2",
-				"TraceID":  "name4",
+				"UserName": newUsername,
 			}
 
-			repository.WithLog(logMock)
-			logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
-			logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
-			logMock.EXPECT().Error(err.Error())
-			ret := repository.Update(Set, key, updates)
-			Expect(ret).To(BeEquivalentTo(err))
-
-		})
-	})
-
-	Describe("Metrics", func() {
-		It("should publish metrics if metric is supported", func() {
-			key := Key().WithTableName(UserTableName).
-				WithHashKeyName("UUID").
-				WithHashKey("uuid")
-
 			dMock.Should().Update(
-				dMock.WithTable(key.TableName()),
-				dMock.WithMatch(
-					mock.InputExpect().
-						FieldEq("UserName", "name2").FieldEq("TraceID", "name4"),
+				dMock.WithTable(UserTableName),
+				dMock.WithHash(
+					"UUID", hashKey,
 				),
+				dMock.WithUpdateItemInput("SET UserName = ?", newUsername, mock.WithCondition("(UserName = ?) AND (UUID = ?)", oldUsername, hashKey)),
 			).Exec()
 
-			updates := map[string]interface{}{
-				"UserName": "name2",
-				"TraceID":  "name4",
-			}
+			updated, err := repository.ConditionalUpdateWithUpdateExpressions(context.Background(), key, UpdateExpressions{
+				Set: updates,
+			}, WithCondition("UserName = ?", oldUsername), WithCondition("UUID = ?", hashKey))
 
-			repository.WithMetrics(metricsMock)
-			metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
-			metricsMock.EXPECT().Publish(key.TableName(), MetricNameUpdatedItemsCount, float64(1)).Return(nil)
-			err := repository.Update(SetSet, key, updates)
+			Expect(updated).To(BeTrue())
 			Expect(err).To(BeNil())
 		})
 
-		It("should not affect update and log error if publish failed", func() {
+		It("should skip an update if the condition were not met", func() {
+			hashKey := "uuid"
+			oldUsername := "username"
+			newUsername := "username2"
+
 			key := Key().WithTableName(UserTableName).
 				WithHashKeyName("UUID").
-				WithHashKey("uuid")
-
-			dMock.Should().Update(
-				dMock.WithTable(key.TableName()),
-				dMock.WithMatch(
-					mock.InputExpect().
-						FieldEq("UserName", "name2").FieldEq("TraceID", "name4"),
-				),
-			).Exec()
+				WithHashKey(hashKey)
 
 			updates := map[string]interface{}{
-				"UserName": "name2",
-				"TraceID":  "name4",
+				"UserName": newUsername,
 			}
 
-			repository.WithMetrics(metricsMock)
-			repository.WithLog(logMock)
-			metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
-			metricsMock.EXPECT().Publish(key.TableName(), MetricNameUpdatedItemsCount, float64(1)).
-				Return(errors.New("failed to publish"))
-			logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
-			logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
-			logMock.EXPECT().Error("failed to publish")
-			err := repository.Update(SetSet, key, updates)
+			dMock.Should().Update(
+				dMock.WithTable(UserTableName),
+				dMock.WithHash(
+					"UUID", hashKey,
+				),
+				dMock.WithUpdateItemInput("SET UserName = ?", newUsername, mock.WithCondition("(UserName = ?)", oldUsername)),
+				dMock.WithError(awserr.New(dynamodb.ErrCodeConditionalCheckFailedException, "", errors.New(dynamodb.ErrCodeConditionalCheckFailedException))),
+			).Exec()
+
+			updated, err := repository.ConditionalUpdateWithUpdateExpressions(context.Background(), key, UpdateExpressions{
+				Set: updates,
+			}, WithCondition("UserName = ?", oldUsername))
+
+			Expect(updated).To(BeFalse())
 			Expect(err).To(BeNil())
+		})
+
+		Describe("Log", func() {
+			It("should log with extra fields if log is supported", func() {
+				key := Key().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid").
+					WithRangeKeyName("email").
+					WithRangeKey("mail@adjoe.io")
+				err := errors.New("failed to update item")
+				dMock.Should().Update(
+					dMock.WithTable(key.TableName()),
+					dMock.WithError(err),
+				).Exec()
+
+				updates := map[string]interface{}{
+					"UserName": "name2",
+					"TraceID":  "name4",
+				}
+
+				repository.WithLog(logMock)
+				logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
+				logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
+				logMock.EXPECT().Error(err.Error())
+				ret := repository.Update(Set, key, updates)
+				Expect(ret).To(BeEquivalentTo(err))
+
+			})
+		})
+
+		Describe("Metrics", func() {
+			It("should publish metrics if metric is supported", func() {
+				key := Key().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid")
+
+				dMock.Should().Update(
+					dMock.WithTable(key.TableName()),
+					dMock.WithMatch(
+						mock.InputExpect().
+							FieldEq("UserName", "name2").FieldEq("TraceID", "name4"),
+					),
+				).Exec()
+
+				updates := map[string]interface{}{
+					"UserName": "name2",
+					"TraceID":  "name4",
+				}
+
+				repository.WithMetrics(metricsMock)
+				metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
+				metricsMock.EXPECT().Publish(key.TableName(), MetricNameUpdatedItemsCount, float64(1)).Return(nil)
+				err := repository.Update(SetSet, key, updates)
+				Expect(err).To(BeNil())
+			})
+
+			It("should not affect update and log error if publish failed", func() {
+				key := Key().WithTableName(UserTableName).
+					WithHashKeyName("UUID").
+					WithHashKey("uuid")
+
+				dMock.Should().Update(
+					dMock.WithTable(key.TableName()),
+					dMock.WithMatch(
+						mock.InputExpect().
+							FieldEq("UserName", "name2").FieldEq("TraceID", "name4"),
+					),
+				).Exec()
+
+				updates := map[string]interface{}{
+					"UserName": "name2",
+					"TraceID":  "name4",
+				}
+
+				repository.WithMetrics(metricsMock)
+				repository.WithLog(logMock)
+				metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
+				metricsMock.EXPECT().Publish(key.TableName(), MetricNameUpdatedItemsCount, float64(1)).
+					Return(errors.New("failed to publish"))
+				logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
+				logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
+				logMock.EXPECT().Error("failed to publish")
+				err := repository.Update(SetSet, key, updates)
+				Expect(err).To(BeNil())
+			})
 		})
 	})
 })
