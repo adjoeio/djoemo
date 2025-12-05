@@ -585,3 +585,65 @@ func (repository Repository) ScanIteratorWithContext(ctx context.Context, key Ke
 
 	return itr, nil
 }
+
+// BatchGetItemsWithContext gets multiple items by their keys; all keys must refer to the same table.
+// out must be a pointer to a slice of your model type.
+// Returns (true, nil) if at least one item is found, (false, nil) if none found, or (false, err) on error.
+func (repository *Repository) BatchGetItemsWithContext(ctx context.Context, keys []KeyInterface, out interface{}) (bool, error) {
+	if len(keys) == 0 {
+		return false, nil
+	}
+
+	// Validate keys and ensure they all point to the same table
+	tableName := keys[0].TableName()
+	for i := 0; i < len(keys); i++ {
+		if err := isValidKey(keys[i]); err != nil {
+			repository.log.error(ctx, keys[i].TableName(), err.Error())
+			return false, err
+		}
+		if keys[i].TableName() != tableName {
+			err := errors.New("BatchGetItemsWithContext: all keys must belong to the same table")
+			repository.log.error(ctx, tableName, err.Error())
+			return false, err
+		}
+	}
+
+	// by hash
+	batch := repository.table(tableName).Batch(*keys[0].HashKeyName())
+	// by hash & range
+	if keys[0].RangeKeyName() != nil && keys[0].RangeKey() != nil {
+		batch = repository.table(tableName).Batch(*keys[0].HashKeyName(), *keys[0].RangeKeyName())
+	}
+
+	// Build dynamo keys
+	dKeys := make([]dynamo.Keyed, len(keys))
+	for i := 0; i < len(keys); i++ {
+		dKeys[i] = dynamo.Keyed(keys[i])
+	}
+
+	// Execute batch get
+	err := batch.Get(dKeys...).AllWithContext(ctx, out)
+	if err != nil {
+		if errors.Is(err, dynamo.ErrNotFound) {
+			repository.log.info(ctx, tableName, ErrNoItemFound.Error())
+			return false, nil
+		}
+
+		repository.log.error(ctx, tableName, err.Error())
+		return false, err
+	}
+
+	// Check if slice is empty
+	val := reflect.ValueOf(out)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() == reflect.Array || val.Kind() == reflect.Slice {
+		if val.Len() == 0 {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
