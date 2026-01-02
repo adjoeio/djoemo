@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/bouk/monkey"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 
+	"github.com/adjoeio/djoemo"
+	metricsModel "github.com/adjoeio/djoemo/metrics/model"
 	"github.com/adjoeio/djoemo/mock"
 
 	. "github.com/adjoeio/djoemo"
@@ -41,7 +42,7 @@ var _ = Describe("Repository", func() {
 				user := &User{
 					UUID: "uuid",
 				}
-				err := repository.SaveItem(key, user)
+				err := repository.SaveItemWithContext(context.Background(), key, user)
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
@@ -49,7 +50,7 @@ var _ = Describe("Repository", func() {
 				user := &User{
 					UUID: "uuid",
 				}
-				err := repository.SaveItem(key, user)
+				err := repository.SaveItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
@@ -58,7 +59,7 @@ var _ = Describe("Repository", func() {
 				user := &User{
 					UUID: "uuid",
 				}
-				err := repository.SaveItem(key, user)
+				err := repository.SaveItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
@@ -86,7 +87,7 @@ var _ = Describe("Repository", func() {
 				UUID:     "uuid",
 				UserName: "name1",
 			}
-			err := repository.SaveItem(key, user)
+			err := repository.SaveItemWithContext(context.Background(), key, user)
 
 			Expect(err).To(BeNil())
 		})
@@ -103,7 +104,7 @@ var _ = Describe("Repository", func() {
 						UUID: "uuid2",
 					},
 				}
-				err := repository.SaveItems(key, users)
+				err := repository.SaveItemsWithContext(context.Background(), key, users)
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
@@ -116,7 +117,7 @@ var _ = Describe("Repository", func() {
 						UUID: "uuid2",
 					},
 				}
-				err := repository.SaveItems(key, users)
+				err := repository.SaveItemsWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
@@ -130,7 +131,7 @@ var _ = Describe("Repository", func() {
 						UUID: "uuid2",
 					},
 				}
-				err := repository.SaveItems(key, users)
+				err := repository.SaveItemsWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
@@ -173,7 +174,7 @@ var _ = Describe("Repository", func() {
 					UserName: "name2",
 				},
 			}
-			err := repository.SaveItems(key, users)
+			err := repository.SaveItemsWithContext(context.Background(), key, users)
 			Expect(err).To(BeNil())
 		})
 
@@ -187,7 +188,7 @@ var _ = Describe("Repository", func() {
 				UUID:     "uuid1",
 				UserName: "name1",
 			}
-			err := repository.SaveItems(key, users)
+			err := repository.SaveItemsWithContext(context.Background(), key, users)
 			Expect(err).To(BeEqualTo(ErrInvalidSliceType))
 		})
 
@@ -229,7 +230,7 @@ var _ = Describe("Repository", func() {
 					UserName: "name2",
 				},
 			}
-			ret := repository.SaveItems(key, users)
+			ret := repository.SaveItemsWithContext(context.Background(), key, users)
 			Expect(ret).To(BeEqualTo(err))
 		})
 	})
@@ -238,9 +239,14 @@ var _ = Describe("Repository", func() {
 		It("should save an item with optimistic Locking", func() {
 			now := time.Date(2019, 1, 1, 12, 15, 0, 0, time.UTC)
 
-			monkey.Patch(time.Now, func() time.Time {
+			djoemoTimeNow := djoemo.TimeNow
+			defer func() {
+				djoemo.TimeNow = djoemoTimeNow
+			}()
+
+			djoemo.TimeNow = func() time.Time {
 				return now
-			})
+			}
 
 			type DjoemoUser struct {
 				Model
@@ -308,7 +314,7 @@ var _ = Describe("Repository", func() {
 			repository.WithLog(logMock)
 			logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
 			logMock.EXPECT().Error(err.Error())
-			ret := repository.SaveItem(key, user)
+			ret := repository.SaveItemWithContext(context.Background(), key, user)
 			Expect(ret).To(BeEquivalentTo(err))
 		})
 	})
@@ -340,9 +346,8 @@ var _ = Describe("Repository", func() {
 
 				repository.WithMetrics(metricsMock)
 
-				metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
-				metricsMock.EXPECT().Publish(key.TableName(), MetricNameSavedItemsCount, float64(1)).Return(nil)
-				err := repository.SaveItem(key, user)
+				metricsMock.EXPECT().Record(gomock.Any(), metricsModel.MetricNameSavedItemsCount, key.TableName(), gomock.Any(), nil)
+				err := repository.SaveItemWithContext(context.Background(), key, user)
 				Expect(err).To(BeNil())
 			})
 
@@ -372,14 +377,12 @@ var _ = Describe("Repository", func() {
 				repository.WithMetrics(metricsMock)
 				repository.WithLog(logMock)
 
-				metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
-				metricsMock.EXPECT().Publish(key.TableName(), MetricNameSavedItemsCount, float64(1)).
-					Return(errors.New("failed to publish"))
+				metricsMock.EXPECT().Record(gomock.Any(), metricsModel.MetricNameSavedItemsCount, key.TableName(), gomock.Any(), nil)
 				logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
 
 				logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
 				logMock.EXPECT().Error("failed to publish")
-				err := repository.SaveItem(key, user)
+				err := repository.SaveItemWithContext(context.Background(), key, user)
 				Expect(err).To(BeNil())
 			})
 		})
@@ -425,8 +428,7 @@ var _ = Describe("Repository", func() {
 
 				traceInfo := map[string]interface{}{"TraceID": "trace-id", "UUID": "uuid"}
 				repository.WithMetrics(metricsMock)
-				metricsMock.EXPECT().WithContext(WithFields(traceInfo)).Return(metricsMock)
-				metricsMock.EXPECT().Publish(key.TableName(), MetricNameSavedItemsCount, float64(2)).Return(nil)
+				metricsMock.EXPECT().Record(gomock.Any(), metricsModel.MetricNameSavedItemsCount, key.TableName(), gomock.Any(), nil)
 				err := repository.SaveItemsWithContext(WithFields(traceInfo), key, users)
 
 				Expect(err).To(BeNil())
@@ -472,13 +474,11 @@ var _ = Describe("Repository", func() {
 
 				repository.WithMetrics(metricsMock)
 				repository.WithLog(logMock)
-				metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
-				metricsMock.EXPECT().Publish(key.TableName(), MetricNameSavedItemsCount, float64(2)).
-					Return(errors.New("failed to publish"))
+				metricsMock.EXPECT().Record(gomock.Any(), metricsModel.MetricNameSavedItemsCount, key.TableName(), gomock.Any(), nil).Times(2)
 				logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
 				logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
 				logMock.EXPECT().Error("failed to publish")
-				err := repository.SaveItems(key, users)
+				err := repository.SaveItemsWithContext(context.Background(), key, users)
 				Expect(err).To(BeNil())
 			})
 		})

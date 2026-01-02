@@ -1,6 +1,9 @@
 package djoemo
 
-import "github.com/guregu/dynamo"
+import (
+	"github.com/adjoeio/djoemo/model"
+	"github.com/guregu/dynamo"
+)
 
 func valueFromPtr[T any](ptr *T) T {
 	if ptr == nil {
@@ -11,7 +14,7 @@ func valueFromPtr[T any](ptr *T) T {
 	return *ptr
 }
 
-func buildTableKeyCondition(table dynamo.Table, key KeyInterface) *dynamo.Query {
+func buildTableKeyCondition(table dynamo.Table, key model.Key) *dynamo.Query {
 	q := table.Get(*key.HashKeyName(), key.HashKey())
 
 	// by range

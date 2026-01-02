@@ -34,7 +34,7 @@ var _ = Describe("Global Index", func() {
 			It("should fail with table name is nil", func() {
 				key := Key().WithHashKeyName("UUID").WithHashKey("uuid")
 				user := &User{}
-				found, err := repository.GIndex(IndexName).GetItem(key, user)
+				found, err := repository.GIndex(IndexName).GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 				Expect(found).To(BeFalse())
@@ -42,7 +42,7 @@ var _ = Describe("Global Index", func() {
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
 				user := &User{}
-				found, err := repository.GIndex(IndexName).GetItem(key, user)
+				found, err := repository.GIndex(IndexName).GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 				Expect(found).To(BeFalse())
@@ -50,7 +50,7 @@ var _ = Describe("Global Index", func() {
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
 				user := &User{}
-				found, err := repository.GIndex(IndexName).GetItem(key, user)
+				found, err := repository.GIndex(IndexName).GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 				Expect(found).To(BeFalse())
@@ -61,7 +61,7 @@ var _ = Describe("Global Index", func() {
 			It("should fail with table name is nil", func() {
 				key := Key().WithHashKeyName("UUID").WithHashKey("uuid")
 				users := &[]User{}
-				found, err := repository.GIndex(IndexName).GetItem(key, users)
+				found, err := repository.GIndex(IndexName).GetItemWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 				Expect(found).To(BeFalse())
@@ -69,7 +69,7 @@ var _ = Describe("Global Index", func() {
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
 				users := &[]User{}
-				found, err := repository.GIndex(IndexName).GetItem(key, users)
+				found, err := repository.GIndex(IndexName).GetItemWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 				Expect(found).To(BeFalse())
@@ -77,7 +77,7 @@ var _ = Describe("Global Index", func() {
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
 				users := &[]User{}
-				found, err := repository.GIndex(IndexName).GetItem(key, users)
+				found, err := repository.GIndex(IndexName).GetItemWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 				Expect(found).To(BeFalse())
@@ -102,7 +102,7 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				user := &User{}
-				found, err := repository.GIndex(IndexName).GetItem(key, user)
+				found, err := repository.GIndex(IndexName).GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
@@ -131,7 +131,7 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				profile := &Profile{}
-				found, err := repository.GIndex(IndexName).GetItem(key, profile)
+				found, err := repository.GIndex(IndexName).GetItemWithContext(context.Background(), key, profile)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
@@ -153,7 +153,7 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				user := &User{}
-				found, err := repository.GIndex(IndexName).GetItem(key, user)
+				found, err := repository.GIndex(IndexName).GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeFalse())
@@ -174,7 +174,7 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				user := &User{}
-				found, err := repository.GIndex(IndexName).GetItem(key, user)
+				found, err := repository.GIndex(IndexName).GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeEquivalentTo(err))
 				Expect(found).To(BeFalse())
@@ -200,7 +200,7 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				users := &[]User{}
-				found, err := repository.GIndex(IndexName).GetItems(key, users)
+				found, err := repository.GIndex(IndexName).GetItemsWithContext(context.Background(), key, users)
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
 				result := *users
@@ -227,13 +227,12 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				profiles := &[]Profile{}
-				found, err := repository.GIndex(IndexName).GetItems(key, profiles)
+				found, err := repository.GIndex(IndexName).GetItemsWithContext(context.Background(), key, profiles)
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
 				result := *profiles
 				Expect(len(result)).To(BeEqualTo(2))
 				Expect(result[0].UUID).To(BeEqualTo(profileDBOutput[0]["UUID"]))
-
 			})
 
 			It("should return false and nil if item was not found", func() {
@@ -252,7 +251,7 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				users := &[]User{}
-				found, err := repository.GIndex(IndexName).GetItems(key, users)
+				found, err := repository.GIndex(IndexName).GetItemsWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeFalse())
@@ -272,12 +271,11 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				users := &[]User{}
-				found, err := repository.GIndex(IndexName).GetItems(key, users)
+				found, err := repository.GIndex(IndexName).GetItemsWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeEquivalentTo(err))
 				Expect(found).To(BeFalse())
 			})
-
 		})
 		Describe("GetItemsWithRangeWithContext", func() {
 			It("should get items with Hash and Range", func() {
@@ -317,19 +315,19 @@ var _ = Describe("Global Index", func() {
 			It("should fail with table name is nil", func() {
 				query := Query().WithHashKeyName("UUID").WithHashKey("uuid")
 				user := &[]User{}
-				err := repository.Query(query, user)
+				err := repository.QueryWithContext(context.Background(), query, user)
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
 				query := Query().WithTableName(UserTableName).WithHashKey("uuid")
 				user := &[]User{}
-				err := repository.GIndex(IndexName).Query(query, user)
+				err := repository.GIndex(IndexName).QueryWithContext(context.Background(), query, user)
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
 			It("should fail with hash key value is nil", func() {
 				query := Query().WithTableName(UserTableName).WithHashKeyName("UUID")
 				user := &[]User{}
-				err := repository.GIndex(IndexName).Query(query, user)
+				err := repository.GIndex(IndexName).QueryWithContext(context.Background(), query, user)
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
 		})
@@ -353,7 +351,7 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				var users []User
-				err := repository.GIndex(IndexName).Query(q, &users)
+				err := repository.GIndex(IndexName).QueryWithContext(context.Background(), q, &users)
 				Expect(err).To(BeNil())
 				Expect(users[0].UUID).To(BeEqualTo(userDBOutput["UUID"]))
 			})
@@ -386,7 +384,7 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				var profiles []Profile
-				err := repository.GIndex(IndexName).Query(q, &profiles)
+				err := repository.GIndex(IndexName).QueryWithContext(context.Background(), q, &profiles)
 
 				Expect(err).To(BeNil())
 				Expect(len(profiles)).To(BeEqualTo(2))
@@ -416,7 +414,7 @@ var _ = Describe("Global Index", func() {
 					).Exec()
 
 				var users []User
-				err := repository.GIndex(IndexName).Query(q, &users)
+				err := repository.GIndex(IndexName).QueryWithContext(context.Background(), q, &users)
 				Expect(err).To(BeNil())
 				Expect(users[0].UUID).To(BeEqualTo(userDBOutput["UUID"]))
 			})
@@ -430,7 +428,7 @@ var _ = Describe("Global Index", func() {
 					WithRangeOp(BeginsWith)
 
 				var profile Profile
-				err := repository.GIndex(IndexName).Query(q, &profile)
+				err := repository.GIndex(IndexName).QueryWithContext(context.Background(), q, &profile)
 
 				Expect(err).To(BeEquivalentTo(ErrInvalidPointerSliceType))
 			})

@@ -33,7 +33,7 @@ var _ = Describe("Repository", func() {
 			It("should fail with table name is nil", func() {
 				key := Key().WithHashKeyName("UUID").WithHashKey("uuid")
 				user := &User{}
-				found, err := repository.GetItem(key, user)
+				found, err := repository.GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 				Expect(found).To(BeFalse())
@@ -41,7 +41,7 @@ var _ = Describe("Repository", func() {
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
 				user := &User{}
-				found, err := repository.GetItem(key, user)
+				found, err := repository.GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 				Expect(found).To(BeFalse())
@@ -49,7 +49,7 @@ var _ = Describe("Repository", func() {
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
 				user := &User{}
-				found, err := repository.GetItem(key, user)
+				found, err := repository.GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 				Expect(found).To(BeFalse())
@@ -60,7 +60,7 @@ var _ = Describe("Repository", func() {
 			It("should fail with table name is nil", func() {
 				key := Key().WithHashKeyName("UUID").WithHashKey("uuid")
 				users := &[]User{}
-				found, err := repository.GetItems(key, users)
+				found, err := repository.GetItemsWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 				Expect(found).To(BeFalse())
@@ -68,7 +68,7 @@ var _ = Describe("Repository", func() {
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
 				users := &[]User{}
-				found, err := repository.GetItems(key, users)
+				found, err := repository.GetItemsWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 				Expect(found).To(BeFalse())
@@ -76,7 +76,7 @@ var _ = Describe("Repository", func() {
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
 				users := &[]User{}
-				found, err := repository.GetItems(key, users)
+				found, err := repository.GetItemsWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 				Expect(found).To(BeFalse())
@@ -100,7 +100,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				user := &User{}
-				found, err := repository.GetItem(key, user)
+				found, err := repository.GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
@@ -128,7 +128,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				profile := &Profile{}
-				found, err := repository.GetItem(key, profile)
+				found, err := repository.GetItemWithContext(context.Background(), key, profile)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
@@ -149,7 +149,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				user := &User{}
-				found, err := repository.GetItem(key, user)
+				found, err := repository.GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeFalse())
@@ -168,7 +168,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				user := &User{}
-				found, err := repository.GetItem(key, user)
+				found, err := repository.GetItemWithContext(context.Background(), key, user)
 
 				Expect(err).To(BeEquivalentTo(err))
 				Expect(found).To(BeFalse())
@@ -189,7 +189,7 @@ var _ = Describe("Repository", func() {
 				).Exec()
 
 			user := &User{}
-			found, err := repository.GetItem(key, user)
+			found, err := repository.GetItemWithContext(context.Background(), key, user)
 
 			Expect(err).To(BeNil())
 			Expect(found).To(BeFalse())
@@ -214,7 +214,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				users := &[]User{}
-				found, err := repository.GetItems(key, users)
+				found, err := repository.GetItemsWithContext(context.Background(), key, users)
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
 				result := *users
@@ -240,13 +240,12 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				profiles := &[]Profile{}
-				found, err := repository.GetItems(key, profiles)
+				found, err := repository.GetItemsWithContext(context.Background(), key, profiles)
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
 				result := *profiles
 				Expect(len(result)).To(BeEqualTo(2))
 				Expect(result[0].UUID).To(BeEqualTo(profileDBOutput[0]["UUID"]))
-
 			})
 
 			It("should return false and nil if item was not found", func() {
@@ -262,7 +261,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				users := &[]User{}
-				found, err := repository.GetItems(key, users)
+				found, err := repository.GetItemsWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeFalse())
@@ -282,7 +281,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				users := &[]User{}
-				found, err := repository.GetItems(key, users)
+				found, err := repository.GetItemsWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeNil())
 				Expect(found).To(BeFalse())
@@ -301,12 +300,11 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				users := &[]User{}
-				found, err := repository.GetItems(key, users)
+				found, err := repository.GetItemsWithContext(context.Background(), key, users)
 
 				Expect(err).To(BeEquivalentTo(err))
 				Expect(found).To(BeFalse())
 			})
-
 		})
 
 		Describe("GetItems with Iterator", func() {
@@ -347,6 +345,5 @@ var _ = Describe("Repository", func() {
 				Expect(users[1].UserName).To(BeEqualTo("userTwo"))
 			})
 		})
-
 	})
 })

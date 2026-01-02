@@ -1,5 +1,7 @@
 package djoemo
 
+import "github.com/adjoeio/djoemo/model"
+
 type key struct {
 	tableName    string
 	hashKeyName  *string
@@ -68,7 +70,7 @@ func (k *key) RangeKey() interface{} {
 	return k.rangeKey
 }
 
-func isValidKey(key KeyInterface) error {
+func isValidKey(key model.Key) error {
 	if err := isValidTableName(key); err != nil {
 		return err
 	}
@@ -82,21 +84,21 @@ func isValidKey(key KeyInterface) error {
 	return nil
 }
 
-func isValidTableName(key KeyInterface) error {
+func isValidTableName(key model.Key) error {
 	if key.TableName() == "" {
 		return ErrInvalidTableName
 	}
 	return nil
 }
 
-func isValidHashKeyName(key KeyInterface) error {
+func isValidHashKeyName(key model.Key) error {
 	if key.HashKeyName() == nil {
 		return ErrInvalidHashKeyName
 	}
 	return nil
 }
 
-func isValidHashKey(key KeyInterface) error {
+func isValidHashKey(key model.Key) error {
 	if key.HashKey() == nil {
 		return ErrInvalidHashKeyValue
 	}

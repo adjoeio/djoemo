@@ -1,6 +1,8 @@
 package djoemo_test
 
 import (
+	"context"
+
 	"go.uber.org/mock/gomock"
 
 	. "github.com/adjoeio/djoemo"
@@ -30,19 +32,19 @@ var _ = Describe("Repository", func() {
 			It("should fail with table name is nil", func() {
 				query := Query().WithHashKeyName("UUID").WithHashKey("uuid")
 				user := &[]User{}
-				err := repository.Query(query, user)
+				err := repository.QueryWithContext(context.Background(), query, user)
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
 				query := Query().WithTableName(UserTableName).WithHashKey("uuid")
 				user := &[]User{}
-				err := repository.Query(query, user)
+				err := repository.QueryWithContext(context.Background(), query, user)
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
 			It("should fail with hash key value is nil", func() {
 				query := Query().WithTableName(UserTableName).WithHashKeyName("UUID")
 				user := &[]User{}
-				err := repository.Query(query, user)
+				err := repository.QueryWithContext(context.Background(), query, user)
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
 		})
@@ -65,7 +67,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				var users []User
-				err := repository.Query(q, &users)
+				err := repository.QueryWithContext(context.Background(), q, &users)
 				Expect(err).To(BeNil())
 				Expect(users[0].UUID).To(BeEqualTo(userDBOutput["UUID"]))
 			})
@@ -91,7 +93,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				var users []User
-				err := repository.Query(q, &users)
+				err := repository.QueryWithContext(context.Background(), q, &users)
 				Expect(err).To(BeNil())
 				Expect(users[0].UUID).To(BeEqualTo(userDBOutput["UUID"]))
 			})
@@ -123,7 +125,7 @@ var _ = Describe("Repository", func() {
 					).Exec()
 
 				var profiles []Profile
-				err := repository.Query(q, &profiles)
+				err := repository.QueryWithContext(context.Background(), q, &profiles)
 
 				Expect(err).To(BeNil())
 				Expect(len(profiles)).To(BeEqualTo(2))
@@ -140,7 +142,7 @@ var _ = Describe("Repository", func() {
 					WithRangeOp(BeginsWith)
 
 				var profile Profile
-				err := repository.Query(q, &profile)
+				err := repository.QueryWithContext(context.Background(), q, &profile)
 
 				Expect(err).To(BeEquivalentTo(ErrInvalidPointerSliceType))
 			})

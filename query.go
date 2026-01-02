@@ -17,9 +17,9 @@ const (
 
 type query struct {
 	key
-	rangeOp Operator
+	rangeOp    Operator
 	descending bool
-	limit *int64
+	limit      *int64
 }
 
 // Key factory method to create struct that implements key interface

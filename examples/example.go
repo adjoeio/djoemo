@@ -10,6 +10,7 @@ import (
 
 	"github.com/adjoeio/djoemo"
 	"github.com/adjoeio/djoemo/mock"
+	"github.com/adjoeio/djoemo/model"
 )
 
 var (
@@ -47,7 +48,7 @@ func Get() {
 		WithHashKey("123")
 
 	// get item
-	found, err := repository.GetItem(key, user)
+	found, err := repository.GetItemWithContext(context.Background(), key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -88,7 +89,7 @@ func GetItems() {
 		WithHashKey("123")
 
 	// get item
-	found, err := repository.GetItems(key, users)
+	found, err := repository.GetItemsWithContext(context.Background(), key, users)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -98,7 +99,7 @@ func GetItems() {
 	}
 
 	// get item with context to allow trace fields in logger
-	found, err = repository.GetItem(key, users)
+	found, err = repository.GetItemWithContext(context.Background(), key, users)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -127,7 +128,7 @@ func Query() {
 		WithRangeOp(djoemo.BeginsWith)
 
 	// query items
-	err := repository.Query(q, users)
+	err := repository.QueryWithContext(context.Background(), q, users)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -149,20 +150,20 @@ func Save() {
 		WithHashKey("123")
 
 	// get item
-	err := repository.SaveItem(key, user)
+	err := repository.SaveItemWithContext(context.Background(), key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	// SaveItem item with context to allow trace fields in logger
-	err = repository.SaveItem(key, user)
+	err = repository.SaveItemWithContext(context.Background(), key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 }
 
-// SaveItems shows an example, how to save multiple items
-func SaveItems() {
+// SaveItemsWithContext(context.Background(), shows an example, how to save multiple items
+func SaveItemsWithContext() {
 	// enable log by passing logger interface
 	repository.WithLog(logInterface)
 
@@ -176,16 +177,16 @@ func SaveItems() {
 		WithHashKeyName("UserUUID").
 		WithHashKey("123").
 		WithRangeKeyName("CreatedAt").
-		WithRangeKey(time.Now().Day())
+		WithRangeKey(djoemo.TimeNow().Day())
 
 	// get item
-	err := repository.SaveItems(key, user)
+	err := repository.SaveItemsWithContext(context.Background(), key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	// SaveItems item with context to allow trace fields in logger
-	err = repository.SaveItems(key, user)
+	// .SaveItemsWithContext(context.Background(), item with context to allow trace fields in logger
+	err = repository.SaveItemsWithContext(context.Background(), key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -210,14 +211,13 @@ func Update() {
 		"Message": "msg1",
 	}
 
-	err := repository.Update(djoemo.Set, key, updates)
-
+	err := repository.UpdateWithContext(context.Background(), djoemo.Set, key, updates)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	// Update item with context to allow trace fields in logger
-	err = repository.Update(djoemo.Set, key, updates)
+	err = repository.UpdateWithContext(context.Background(), djoemo.Set, key, updates)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -238,13 +238,13 @@ func Delete() {
 		WithHashKey("123")
 
 	// get item
-	err := repository.DeleteItem(key)
+	err := repository.DeleteItemWithContext(context.Background(), key)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	// DeleteItem item with context to allow trace fields in logger
-	err = repository.DeleteItem(key)
+	err = repository.DeleteItemWithContext(context.Background(), key)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -265,13 +265,13 @@ func DeleteItems() {
 		WithHashKey("123")
 
 	// get item
-	err := repository.DeleteItems([]djoemo.KeyInterface{key})
+	err := repository.DeleteItemsWithContext(context.Background(), []model.Key{key})
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	// DeleteItems with context to allow trace fields in logger
-	err = repository.DeleteItems([]djoemo.KeyInterface{key})
+	err = repository.DeleteItemsWithContext(context.Background(), []model.Key{key})
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -293,7 +293,7 @@ func GetFromGlobalIndex() {
 		WithHashKey("123")
 
 	// get item
-	found, err := repository.GIndex("UserIndex").GetItem(key, user)
+	found, err := repository.GIndex("UserIndex").GetItemWithContext(context.Background(), key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -334,7 +334,7 @@ func GetItemsFromGlobalIndex() {
 		WithHashKey("123")
 
 	// get item
-	found, err := repository.GIndex("UserIndex").GetItem(key, user)
+	found, err := repository.GIndex("UserIndex").GetItemWithContext(context.Background(), key, user)
 	if err != nil {
 		fmt.Println(err.Error())
 	}

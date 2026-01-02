@@ -3,7 +3,12 @@ package djoemo
 import (
 	"context"
 	"reflect"
+	"time"
 
+	"github.com/adjoeio/djoemo/logger"
+	"github.com/adjoeio/djoemo/metrics"
+	metricsModel "github.com/adjoeio/djoemo/metrics/model"
+	"github.com/adjoeio/djoemo/model"
 	"github.com/guregu/dynamo"
 )
 
@@ -11,59 +16,48 @@ import (
 type GlobalIndex struct {
 	name         string
 	dynamoClient *dynamo.DB
-	log          logger
-}
-
-// GetItems by key; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in items
-// returns true if items are found, returns false and nil if no items found, returns false and error in case of error
-func (gi GlobalIndex) GetItems(key KeyInterface, items interface{}) (bool, error) {
-	return gi.GetItemsWithContext(context.TODO(), key, items)
-}
-
-// GetItem get item; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in item
-// returns true if item is found, returns false and nil if no item found, returns false and an error in case of error
-func (gi GlobalIndex) GetItem(key KeyInterface, item interface{}) (bool, error) {
-	return gi.GetItemWithContext(context.TODO(), key, item)
+	log          logger.LogInterface
+	metrics      metrics.Metrics
 }
 
 // GetItemWithContext item; it needs a key interface that is used to get the table name, hash key, and the range key if it exists; output will be contained in item; context is optional param, which used to enable log with context
-func (gi GlobalIndex) GetItemWithContext(ctx context.Context, key KeyInterface, item interface{}) (bool, error) {
+func (gi GlobalIndex) GetItemWithContext(ctx context.Context, key model.Key, item any) (bool, error) {
+	var err error
+	defer gi.recordMetrics(ctx, metricsModel.MetricNameQueryItemsCount, key, &err)()
 
 	if err := isValidKey(key); err != nil {
-		gi.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
-	err := buildTableKeyCondition(gi.table(key.TableName()), key).Index(gi.name).OneWithContext(ctx, item)
+	err = buildTableKeyCondition(gi.table(key.TableName()), key).Index(gi.name).OneWithContext(ctx, item)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
-			gi.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
+			gi.log.WithContext(ctx).WithField(TableName, key.TableName()).Info(ErrNoItemFound.Error())
 			return false, nil
 		}
 
-		gi.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
 	return true, nil
-
 }
 
 // GetItemsWithContext queries multiple items by key (hash key) and returns it in the slice of items items
-func (gi GlobalIndex) GetItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error) {
+func (gi GlobalIndex) GetItemsWithContext(ctx context.Context, key model.Key, items any) (bool, error) {
+	var err error
+	defer gi.recordMetrics(ctx, metricsModel.MetricNameQueryItemsCount, key, &err)()
+
 	if err := isValidKey(key); err != nil {
-		gi.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
-	err := gi.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).Index(gi.name).AllWithContext(ctx, items)
+	err = gi.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).Index(gi.name).AllWithContext(ctx, items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
-			gi.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
+			gi.log.WithContext(ctx).WithField(TableName, key.TableName()).Info(ErrNoItemFound.Error())
 			return false, nil
 		}
 
-		gi.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
@@ -82,20 +76,21 @@ func (gi GlobalIndex) GetItemsWithContext(ctx context.Context, key KeyInterface,
 }
 
 // GetItemsWithRangeWithContext queries multiple items by key (hash key) and returns it in the slice of items respecting the range key
-func (gi GlobalIndex) GetItemsWithRangeWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error) {
+func (gi GlobalIndex) GetItemsWithRangeWithContext(ctx context.Context, key model.Key, items any) (bool, error) {
+	var err error
+	defer gi.recordMetrics(ctx, metricsModel.MetricNameQueryItemsCount, key, &err)()
+
 	if err := isValidKey(key); err != nil {
-		gi.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
-	err := buildTableKeyCondition(gi.table(key.TableName()), key).Index(gi.name).AllWithContext(ctx, items)
+	err = buildTableKeyCondition(gi.table(key.TableName()), key).Index(gi.name).AllWithContext(ctx, items)
 	if err != nil {
 		if err == dynamo.ErrNotFound {
-			gi.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
+			gi.log.WithContext(ctx).WithField(TableName, key.TableName()).Info(ErrNoItemFound.Error())
 			return false, nil
 		}
 
-		gi.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
@@ -120,13 +115,14 @@ func (gi GlobalIndex) table(tableName string) dynamo.Table {
 // QueryWithContext by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
 // context which used to enable log with context, the output will be given in items
 // returns error in case of error
-func (gi GlobalIndex) QueryWithContext(ctx context.Context, query QueryInterface, item interface{}) error {
+func (gi GlobalIndex) QueryWithContext(ctx context.Context, query QueryInterface, item any) error {
+	var err error
+	defer gi.recordMetrics(ctx, metricsModel.MetricNameQueryItemsCount, query, &err)()
 
 	if !IsPointerOFSlice(item) {
 		return ErrInvalidPointerSliceType
 	}
 	if err := isValidKey(query); err != nil {
-		gi.log.error(ctx, query.TableName(), err.Error())
 		return err
 	}
 
@@ -145,17 +141,21 @@ func (gi GlobalIndex) QueryWithContext(ctx context.Context, query QueryInterface
 		q = q.Order(dynamo.Descending)
 	}
 
-	err := q.AllWithContext(ctx, item)
+	err = q.AllWithContext(ctx, item)
 	if err != nil {
-		gi.log.error(ctx, query.TableName(), err.Error())
 		return err
 	}
 
 	return nil
 }
 
-// Query by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
-// returns error in case of error
-func (gi GlobalIndex) Query(query QueryInterface, item interface{}) error {
-	return gi.QueryWithContext(context.TODO(), query, item)
+func (gi GlobalIndex) recordMetrics(ctx context.Context, caller string, key model.Key, err *error) func() {
+	start := TimeNow()
+	return func() {
+		if err != nil && *err != nil {
+			gi.log.WithContext(ctx).WithField(TableName, key.TableName()).Error((*err).Error())
+		}
+
+		gi.metrics.Record(ctx, caller, key, time.Since(start), err)
+	}
 }

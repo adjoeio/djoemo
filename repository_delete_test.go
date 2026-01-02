@@ -3,13 +3,15 @@ package djoemo_test
 import (
 	"context"
 	"errors"
+
 	. "github.com/adjoeio/djoemo"
+	metricsModel "github.com/adjoeio/djoemo/metrics/model"
 	"github.com/adjoeio/djoemo/mock"
+	"github.com/adjoeio/djoemo/model"
 	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("Repository", func() {
-
 	const (
 		UserTableName = "UserTable"
 	)
@@ -35,19 +37,19 @@ var _ = Describe("Repository", func() {
 			It("should fail with table name is nil", func() {
 				key := Key().WithHashKeyName("UUID").WithHashKey("uuid")
 
-				err := repository.DeleteItem(key)
+				err := repository.DeleteItemWithContext(context.Background(), key)
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
 
-				err := repository.DeleteItem(key)
+				err := repository.DeleteItemWithContext(context.Background(), key)
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
 
-				err := repository.DeleteItem(key)
+				err := repository.DeleteItemWithContext(context.Background(), key)
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
 		})
@@ -66,7 +68,7 @@ var _ = Describe("Repository", func() {
 					dMock.WithDeleteInput(deleteDBInput),
 				).Exec()
 
-			err := repository.DeleteItem(key)
+			err := repository.DeleteItemWithContext(context.Background(), key)
 			Expect(err).To(BeNil())
 		})
 		It("should delete item by hash key and range key", func() {
@@ -87,7 +89,7 @@ var _ = Describe("Repository", func() {
 					dMock.WithDeleteInput(deleteDBInput),
 				).Exec()
 
-			err := repository.DeleteItem(key)
+			err := repository.DeleteItemWithContext(context.Background(), key)
 			Expect(err).To(BeNil())
 		})
 
@@ -107,7 +109,7 @@ var _ = Describe("Repository", func() {
 					dMock.WithError(err),
 				).Exec()
 
-			ret := repository.DeleteItem(key)
+			ret := repository.DeleteItemWithContext(context.Background(), key)
 			Expect(ret).To(BeEqualTo(err))
 		})
 	})
@@ -117,25 +119,25 @@ var _ = Describe("Repository", func() {
 			It("should fail with table name is nil", func() {
 				key := Key().WithHashKeyName("UUID").WithHashKey("uuid")
 				key1 := Key().WithHashKeyName("UUID").WithHashKey("uuid1")
-				keys := []KeyInterface{key, key1}
+				keys := []model.Key{key, key1}
 
-				err := repository.DeleteItems(keys)
+				err := repository.DeleteItemsWithContext(context.Background(), keys)
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKey("uuid")
 				key1 := Key().WithTableName(UserTableName).WithHashKey("uuid1")
-				keys := []KeyInterface{key, key1}
+				keys := []model.Key{key, key1}
 
-				err := repository.DeleteItems(keys)
+				err := repository.DeleteItemsWithContext(context.Background(), keys)
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
 			It("should fail with hash key value is nil", func() {
 				key := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
 				key1 := Key().WithTableName(UserTableName).WithHashKeyName("UUID")
-				keys := []KeyInterface{key, key1}
+				keys := []model.Key{key, key1}
 
-				err := repository.DeleteItems(keys)
+				err := repository.DeleteItemsWithContext(context.Background(), keys)
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
 		})
@@ -148,7 +150,7 @@ var _ = Describe("Repository", func() {
 				WithHashKeyName("UUID").
 				WithHashKey("uuid1")
 
-			keys := []KeyInterface{key, key1}
+			keys := []model.Key{key, key1}
 
 			deleteDBInput := []map[string]interface{}{
 				{"UUID": "uuid"}, {"UUID": "uuid1"},
@@ -160,7 +162,7 @@ var _ = Describe("Repository", func() {
 					dMock.WithDeleteInputs(deleteDBInput),
 				).Exec()
 
-			err := repository.DeleteItems(keys)
+			err := repository.DeleteItemsWithContext(context.Background(), keys)
 			Expect(err).To(BeNil())
 		})
 
@@ -176,7 +178,7 @@ var _ = Describe("Repository", func() {
 				WithRangeKeyName("UserName").
 				WithRangeKey("user1")
 
-			keys := []KeyInterface{key, key1}
+			keys := []model.Key{key, key1}
 
 			deleteDBInput := []map[string]interface{}{
 				{"UUID": "uuid", "UserName": "user"}, {"UUID": "uuid1", "UserName": "user1"},
@@ -188,7 +190,7 @@ var _ = Describe("Repository", func() {
 					dMock.WithDeleteInputs(deleteDBInput),
 				).Exec()
 
-			err := repository.DeleteItems(keys)
+			err := repository.DeleteItemsWithContext(context.Background(), keys)
 			Expect(err).To(BeNil())
 		})
 
@@ -200,7 +202,7 @@ var _ = Describe("Repository", func() {
 				WithHashKeyName("UUID").
 				WithHashKey("uuid1")
 
-			keys := []KeyInterface{key, key1}
+			keys := []model.Key{key, key1}
 
 			deleteDBInput := []map[string]interface{}{
 				{"UUID": "uuid"}, {"UUID": "uuid1"},
@@ -214,14 +216,14 @@ var _ = Describe("Repository", func() {
 					dMock.WithError(err),
 				).Exec()
 
-			ret := repository.DeleteItems(keys)
+			ret := repository.DeleteItemsWithContext(context.Background(), keys)
 			Expect(ret).To(BeEqualTo(err))
 		})
 
 		It("should return nil if keys empty", func() {
-			var keys []KeyInterface
+			var keys []model.Key
 
-			err := repository.DeleteItems(keys)
+			err := repository.DeleteItemsWithContext(context.Background(), keys)
 			Expect(err).To(BeNil())
 		})
 
@@ -233,7 +235,7 @@ var _ = Describe("Repository", func() {
 				WithHashKeyName("UUID").
 				WithHashKey("uuid1")
 
-			keys := []KeyInterface{key, key1}
+			keys := []model.Key{key, key1}
 
 			deleteDBInput := []map[string]interface{}{
 				{"UUID": "uuid"}, {"UUID": "uuid1"},
@@ -246,9 +248,8 @@ var _ = Describe("Repository", func() {
 				).Exec()
 
 			repository.WithMetrics(metricsMock)
-			metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
-			metricsMock.EXPECT().Publish(key.TableName(), MetricNameDeleteItemsCount, float64(2)).Return(nil)
-			err := repository.DeleteItems(keys)
+			metricsMock.EXPECT().Record(gomock.Any(), metricsModel.MetricNameDeleteItemsCount, key.TableName(), gomock.Any(), nil)
+			err := repository.DeleteItemsWithContext(context.Background(), keys)
 			Expect(err).To(BeNil())
 		})
 
@@ -260,7 +261,7 @@ var _ = Describe("Repository", func() {
 				WithHashKeyName("UUID").
 				WithHashKey("uuid1")
 
-			keys := []KeyInterface{key, key1}
+			keys := []model.Key{key, key1}
 
 			deleteDBInput := []map[string]interface{}{
 				{"UUID": "uuid"}, {"UUID": "uuid1"},
@@ -274,14 +275,12 @@ var _ = Describe("Repository", func() {
 
 			repository.WithMetrics(metricsMock)
 			repository.WithLog(logMock)
-			metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
-			metricsMock.EXPECT().Publish(key.TableName(), MetricNameDeleteItemsCount, float64(2)).
-				Return(errors.New("failed to publish"))
+			metricsMock.EXPECT().Record(gomock.Any(), metricsModel.MetricNameDeleteItemsCount, key.TableName(), gomock.Any(), nil)
 
 			logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
 			logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
 			logMock.EXPECT().Error("failed to publish")
-			err := repository.DeleteItems(keys)
+			err := repository.DeleteItemsWithContext(context.Background(), keys)
 			Expect(err).To(BeNil())
 		})
 	})

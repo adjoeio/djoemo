@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	. "github.com/adjoeio/djoemo"
+	metricsModel "github.com/adjoeio/djoemo/metrics/model"
 	"github.com/adjoeio/djoemo/mock"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"go.uber.org/mock/gomock"
@@ -30,6 +31,7 @@ var _ = Describe("Repository", func() {
 		dMock = mock.NewDynamoMock(dAPIMock)
 		repository = NewRepository(dAPIMock)
 	})
+)
 
 	Describe("Update", func() {
 		Describe("Update Invalid key ", func() {
@@ -40,7 +42,7 @@ var _ = Describe("Repository", func() {
 					"TraceID":  "name4",
 				}
 
-				err := repository.Update(Set, key, updates)
+				err := repository.UpdateWithContext(context.Background(), Set, key, updates)
 				Expect(err).To(BeEqualTo(ErrInvalidTableName))
 			})
 			It("should fail with hash key name is nil", func() {
@@ -50,7 +52,7 @@ var _ = Describe("Repository", func() {
 					"TraceID":  "name4",
 				}
 
-				err := repository.Update(Set, key, updates)
+				err := repository.UpdateWithContext(context.Background(), Set, key, updates)
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyName))
 			})
 			It("should fail with hash key value is nil", func() {
@@ -60,7 +62,7 @@ var _ = Describe("Repository", func() {
 					"TraceID":  "name4",
 				}
 
-				err := repository.Update(Set, key, updates)
+				err := repository.UpdateWithContext(context.Background(), Set, key, updates)
 				Expect(err).To(BeEqualTo(ErrInvalidHashKeyValue))
 			})
 		})
@@ -72,7 +74,7 @@ var _ = Describe("Repository", func() {
 				WithRangeKeyName("email").
 				WithRangeKey("mail@adjoe.io")
 
-			dMock.Should().Update(
+			dMock.Should().Update(context.Background(),
 				dMock.WithTable(key.TableName()),
 				dMock.WithMatch(
 					mock.InputExpect().
@@ -85,7 +87,7 @@ var _ = Describe("Repository", func() {
 				"TraceID":  "name4",
 			}
 
-			err := repository.Update(Set, key, updates)
+			err := repository.UpdateWithContext(context.Background(), Set, key, updates)
 			Expect(err).To(BeNil())
 		})
 
@@ -94,7 +96,7 @@ var _ = Describe("Repository", func() {
 				WithHashKeyName("UUID").
 				WithHashKey("uuid")
 
-			dMock.Should().Update(
+			dMock.Should().UpdateWithContext(context.Background(),
 				dMock.WithTable(key.TableName()),
 				dMock.WithMatch(
 					mock.InputExpect().
@@ -107,7 +109,7 @@ var _ = Describe("Repository", func() {
 				"TraceID":  "name4",
 			}
 
-			err := repository.Update(SetSet, key, updates)
+			err := repository.UpdateWithContext(context.Background(), SetSet, key, updates)
 			Expect(err).To(BeNil())
 		})
 
@@ -116,7 +118,7 @@ var _ = Describe("Repository", func() {
 				WithHashKeyName("UUID").
 				WithHashKey("uuid")
 
-			dMock.Should().Update(
+			dMock.Should().UpdateWithContext(context.Background(),
 				dMock.WithTable(key.TableName()),
 				dMock.WithMatch(
 					mock.InputExpect().
@@ -129,7 +131,7 @@ var _ = Describe("Repository", func() {
 				"TraceID":  "name4",
 			}
 
-			err := repository.Update(SetIfNotExists, key, updates)
+			err := repository.UpdateWithContext(context.Background(), SetIfNotExists, key, updates)
 			Expect(err).To(BeNil())
 		})
 
@@ -138,7 +140,7 @@ var _ = Describe("Repository", func() {
 				WithHashKeyName("UUID").
 				WithHashKey("uuid")
 
-			dMock.Should().Update(
+			dMock.Should().UpdateWithContext(context.Background(),
 				dMock.WithTable(key.TableName()),
 				dMock.WithMatch(
 					mock.InputExpect().
@@ -150,7 +152,7 @@ var _ = Describe("Repository", func() {
 				"Meta.$ = ?": []interface{}{"foo", "bar"},
 			}
 
-			err := repository.Update(SetExpr, key, updates)
+			err := repository.UpdateWithContext(context.Background(), SetExpr, key, updates)
 			Expect(err).To(BeNil())
 		})
 		It("should Update item with Add", func() {
@@ -158,7 +160,7 @@ var _ = Describe("Repository", func() {
 				WithHashKeyName("UUID").
 				WithHashKey("uuid")
 
-			dMock.Should().Update(
+			dMock.Should().UpdateWithContext(context.Background(),
 				dMock.WithTable(key.TableName()),
 				dMock.WithMatch(
 					mock.InputExpect().
@@ -170,7 +172,7 @@ var _ = Describe("Repository", func() {
 				"ElemCount": 1,
 			}
 
-			err := repository.Update(Add, key, updates)
+			err := repository.UpdateWithContext(context.Background(), Add, key, updates)
 			Expect(err).To(BeNil())
 		})
 		It("should return in err in case of db err", func() {
@@ -181,7 +183,7 @@ var _ = Describe("Repository", func() {
 				WithRangeKey("mail@adjoe.io")
 
 			err := errors.New("failed to update item")
-			dMock.Should().Update(
+			dMock.Should().UpdateWithContext(context.Background(),
 				dMock.WithTable(key.TableName()),
 				dMock.WithError(err),
 			).Exec()
@@ -191,7 +193,7 @@ var _ = Describe("Repository", func() {
 				"TraceID":  "name4",
 			}
 
-			ret := repository.Update(Set, key, updates)
+			ret := repository.UpdateWithContext(context.Background(), Set, key, updates)
 			Expect(ret).To(BeEqualTo(err))
 		})
 	})
@@ -253,7 +255,7 @@ var _ = Describe("Repository", func() {
 				WithRangeKeyName("email").
 				WithRangeKey("mail@adjoe.io")
 			err := errors.New("failed to update item")
-			dMock.Should().Update(
+			dMock.Should().UpdateWithContext(context.Background(),
 				dMock.WithTable(key.TableName()),
 				dMock.WithError(err),
 			).Exec()
@@ -267,9 +269,8 @@ var _ = Describe("Repository", func() {
 			logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
 			logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
 			logMock.EXPECT().Error(err.Error())
-			ret := repository.Update(Set, key, updates)
+			ret := repository.UpdateWithContext(context.Background(), Set, key, updates)
 			Expect(ret).To(BeEquivalentTo(err))
-
 		})
 	})
 
@@ -279,7 +280,7 @@ var _ = Describe("Repository", func() {
 				WithHashKeyName("UUID").
 				WithHashKey("uuid")
 
-			dMock.Should().Update(
+			dMock.Should().UpdateWithContext(context.Background(),
 				dMock.WithTable(key.TableName()),
 				dMock.WithMatch(
 					mock.InputExpect().
@@ -293,9 +294,8 @@ var _ = Describe("Repository", func() {
 			}
 
 			repository.WithMetrics(metricsMock)
-			metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
-			metricsMock.EXPECT().Publish(key.TableName(), MetricNameUpdatedItemsCount, float64(1)).Return(nil)
-			err := repository.Update(SetSet, key, updates)
+			metricsMock.EXPECT().Record(gomock.Any(), metricsModel.MetricNameUpdatedItemsCount, key.TableName(), gomock.Any(), nil)
+			err := repository.UpdateWithContext(context.Background(), SetSet, key, updates)
 			Expect(err).To(BeNil())
 		})
 
@@ -304,7 +304,7 @@ var _ = Describe("Repository", func() {
 				WithHashKeyName("UUID").
 				WithHashKey("uuid")
 
-			dMock.Should().Update(
+			dMock.Should().UpdateWithContext(context.Background(),
 				dMock.WithTable(key.TableName()),
 				dMock.WithMatch(
 					mock.InputExpect().
@@ -319,13 +319,11 @@ var _ = Describe("Repository", func() {
 
 			repository.WithMetrics(metricsMock)
 			repository.WithLog(logMock)
-			metricsMock.EXPECT().WithContext(context.TODO()).Return(metricsMock)
-			metricsMock.EXPECT().Publish(key.TableName(), MetricNameUpdatedItemsCount, float64(1)).
-				Return(errors.New("failed to publish"))
+			metricsMock.EXPECT().Record(gomock.Any(), metricsModel.MetricNameUpdatedItemsCount, key.TableName(), gomock.Any(), nil)
 			logMock.EXPECT().WithFields(map[string]interface{}{"TableName": key.TableName()}).Return(logMock)
 			logMock.EXPECT().WithContext(context.TODO()).Return(logMock)
 			logMock.EXPECT().Error("failed to publish")
-			err := repository.Update(SetSet, key, updates)
+			err := repository.UpdateWithContext(context.Background(), SetSet, key, updates)
 			Expect(err).To(BeNil())
 		})
 	})

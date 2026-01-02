@@ -11,11 +11,13 @@ import (
 	"github.com/onsi/gomega"
 )
 
-/*InputMatcher matcher to match only specified fields and not pass all fields to mock
+/*
+InputMatcher matcher to match only specified fields and not pass all fields to mock
 ## Usage
 matcher := mocks.InputExpect().
-			FieldEq("FIELD_NAME", "FIELD_VALUE").
-			FieldEq("FIELD_NAME_1", "FIELD_VALUE_1"),
+
+	FieldEq("FIELD_NAME", "FIELD_VALUE").
+	FieldEq("FIELD_NAME_1", "FIELD_VALUE_1"),
 
 dynamoDBMock := mocks.NewMockDynamoDBAPI(mockCtrl)
 dynamoDBMock.EXPECT().PutItem()
@@ -23,15 +25,16 @@ dynamoDBMock.EXPECT().PutItem()
 ## usage with dynamomock helper
 dynamoMock := mocks.NewMockDynamoDBAPI(mockCtrl)
 dmock := mocks.NewDynamoMock(dynamoMock)
-			dmock.Should().
-					SaveItem(
-						dmock.WithTable("TABLENAME"),
-						dmock.WithMatch(
-							mocks.InputExpect().
-								FieldEq("FIELD_NAME", "FIELD_VALUE").
-								FieldEq("FIELD_NAME_1", "FIELD_VALUE_1"),
-						),
-					).Exec()
+
+	dmock.Should().
+			SaveItem(
+				dmock.WithTable("TABLENAME"),
+				dmock.WithMatch(
+					mocks.InputExpect().
+						FieldEq("FIELD_NAME", "FIELD_VALUE").
+						FieldEq("FIELD_NAME_1", "FIELD_VALUE_1"),
+				),
+			).Exec()
 */
 type InputMatcher struct {
 	Fields    map[string]interface{}
@@ -101,11 +104,11 @@ func (i *InputMatcher) matchUpdateItemInput(x interface{}) bool {
 
 	for _, expression := range updateExpressions {
 		var keyValue []string
-		if strings.ContainsRune(expression, '='){
+		if strings.ContainsRune(expression, '=') {
 			keyValue = strings.Split(expression, "=")
-		}else{
-			keyValue = strings.Split(expression,":")
-			if len(keyValue) > 0{
+		} else {
+			keyValue = strings.Split(expression, ":")
+			if len(keyValue) > 0 {
 				keyValue[1] = fmt.Sprintf(":%s", keyValue[1])
 			}
 		}

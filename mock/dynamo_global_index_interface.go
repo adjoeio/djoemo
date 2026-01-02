@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	djoemo "github.com/adjoeio/djoemo"
+	model "github.com/adjoeio/djoemo/model"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,23 +36,8 @@ func (m *MockGlobalIndexInterface) EXPECT() *MockGlobalIndexInterfaceMockRecorde
 	return m.recorder
 }
 
-// GetItem mocks base method.
-func (m *MockGlobalIndexInterface) GetItem(key djoemo.KeyInterface, item interface{}) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetItem", key, item)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetItem indicates an expected call of GetItem.
-func (mr *MockGlobalIndexInterfaceMockRecorder) GetItem(key, item interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItem", reflect.TypeOf((*MockGlobalIndexInterface)(nil).GetItem), key, item)
-}
-
 // GetItemWithContext mocks base method.
-func (m *MockGlobalIndexInterface) GetItemWithContext(ctx context.Context, key djoemo.KeyInterface, item interface{}) (bool, error) {
+func (m *MockGlobalIndexInterface) GetItemWithContext(ctx context.Context, key model.Key, item interface{}) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetItemWithContext", ctx, key, item)
 	ret0, _ := ret[0].(bool)
@@ -65,23 +51,8 @@ func (mr *MockGlobalIndexInterfaceMockRecorder) GetItemWithContext(ctx, key, ite
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemWithContext", reflect.TypeOf((*MockGlobalIndexInterface)(nil).GetItemWithContext), ctx, key, item)
 }
 
-// GetItems mocks base method.
-func (m *MockGlobalIndexInterface) GetItems(key djoemo.KeyInterface, items interface{}) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetItems", key, items)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetItems indicates an expected call of GetItems.
-func (mr *MockGlobalIndexInterfaceMockRecorder) GetItems(key, items interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItems", reflect.TypeOf((*MockGlobalIndexInterface)(nil).GetItems), key, items)
-}
-
 // GetItemsWithContext mocks base method.
-func (m *MockGlobalIndexInterface) GetItemsWithContext(ctx context.Context, key djoemo.KeyInterface, items interface{}) (bool, error) {
+func (m *MockGlobalIndexInterface) GetItemsWithContext(ctx context.Context, key model.Key, items interface{}) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetItemsWithContext", ctx, key, items)
 	ret0, _ := ret[0].(bool)
@@ -96,7 +67,7 @@ func (mr *MockGlobalIndexInterfaceMockRecorder) GetItemsWithContext(ctx, key, it
 }
 
 // GetItemsWithRangeWithContext mocks base method.
-func (m *MockGlobalIndexInterface) GetItemsWithRangeWithContext(ctx context.Context, key djoemo.KeyInterface, items interface{}) (bool, error) {
+func (m *MockGlobalIndexInterface) GetItemsWithRangeWithContext(ctx context.Context, key model.Key, items interface{}) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetItemsWithRangeWithContext", ctx, key, items)
 	ret0, _ := ret[0].(bool)
@@ -108,20 +79,6 @@ func (m *MockGlobalIndexInterface) GetItemsWithRangeWithContext(ctx context.Cont
 func (mr *MockGlobalIndexInterfaceMockRecorder) GetItemsWithRangeWithContext(ctx, key, items interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemsWithRangeWithContext", reflect.TypeOf((*MockGlobalIndexInterface)(nil).GetItemsWithRangeWithContext), ctx, key, items)
-}
-
-// Query mocks base method.
-func (m *MockGlobalIndexInterface) Query(query djoemo.QueryInterface, item interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Query", query, item)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Query indicates an expected call of Query.
-func (mr *MockGlobalIndexInterfaceMockRecorder) Query(query, item interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockGlobalIndexInterface)(nil).Query), query, item)
 }
 
 // QueryWithContext mocks base method.
