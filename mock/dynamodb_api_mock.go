@@ -5,11 +5,12 @@
 package mock
 
 import (
+	reflect "reflect"
+
 	aws "github.com/aws/aws-sdk-go/aws"
 	request "github.com/aws/aws-sdk-go/aws/request"
 	dynamodb "github.com/aws/aws-sdk-go/service/dynamodb"
-	gomock "go.uber.org/mock/gomock"
-	reflect "reflect"
+	"go.uber.org/mock/gomock"
 )
 
 // MockDynamoDBAPI is a mock of DynamoDBAPI interface

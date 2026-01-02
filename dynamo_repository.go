@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/guregu/dynamo"
@@ -15,45 +17,54 @@ import (
 // Repository facade for github.com/guregu/djoemo
 type Repository struct {
 	dynamoClient *dynamo.DB
-	log          logger
-	metrics      metrics
+	log          LogInterface
+	metrics      *Metrics
 }
 
 // NewRepository factory method for djoemo repository
 func NewRepository(dynamoClient dynamodbiface.DynamoDBAPI) RepositoryInterface {
 	return &Repository{
 		dynamoClient: dynamo.NewFromIface(dynamoClient),
-		log:          logger{log: nopLog{}},
+		log:          NewNopLog(),
+		metrics:      &Metrics{},
 	}
 }
 
 // WithLog enables logging; it accepts LogInterface as logger
 func (repository *Repository) WithLog(log LogInterface) {
-	repository.log = logger{log: log}
+	repository.log = log
 }
 
 // WithMetrics enables metrics; it accepts MetricsInterface as metrics publisher
 func (repository *Repository) WithMetrics(metricsInterface MetricsInterface) {
-	repository.metrics = metrics{metrics: metricsInterface}
+	repository.metrics.Add(metricsInterface)
+}
+
+// WithPrometheusMetrics enables prometheus metrics
+func (repository *Repository) WithPrometheusMetrics(registry *prometheus.Registry) RepositoryInterface {
+	prommetrics := NewPrometheusMetrics(registry)
+	repository.metrics.Add(prommetrics)
+	return repository
 }
 
 // GetItemWithContext get item; it accepts a key interface that is used to get the table name, hash key and range key if it exists;
 // context which used to enable log with context; the output will be given in item
 // returns true if item is found, returns false and nil if no item found, returns false and an error in case of error
-func (repository *Repository) GetItemWithContext(ctx context.Context, key KeyInterface, item interface{}) (bool, error) {
-	if err := isValidKey(key); err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
+func (repository Repository) GetItemWithContext(ctx context.Context, key KeyInterface, item interface{}) (bool, error) {
+	var err error
+	defer repository.recordMetrics(ctx, OpRead, key, &err)()
+
+	if err = isValidKey(key); err != nil {
 		return false, err
 	}
 
-	err := buildTableKeyCondition(repository.table(key.TableName()), key).OneWithContext(ctx, item)
+	err = buildTableKeyCondition(repository.table(key.TableName()), key).OneWithContext(ctx, item)
 	if err != nil {
-		if err == dynamo.ErrNotFound {
-			repository.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
+		if errors.Is(err, dynamo.ErrNotFound) {
+			repository.log.WithContext(ctx).WithField(TableName, key.TableName()).Info(ErrNoItemFound.Error())
 			return false, nil
 		}
 
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
@@ -62,21 +73,17 @@ func (repository *Repository) GetItemWithContext(ctx context.Context, key KeyInt
 
 // SaveItemWithContext it accepts a key interface, that is used to get the table name; item is the item to be saved; context which used to enable log with context
 // returns error in case of error
-func (repository *Repository) SaveItemWithContext(ctx context.Context, key KeyInterface, item interface{}) error {
-	if err := isValidKey(key); err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
+func (repository Repository) SaveItemWithContext(ctx context.Context, key KeyInterface, item interface{}) error {
+	var err error
+	defer repository.recordMetrics(ctx, OpCommit, key, &err)()
+
+	if err = isValidKey(key); err != nil {
 		return err
 	}
 
-	err := repository.table(key.TableName()).Put(item).RunWithContext(ctx)
+	err = repository.table(key.TableName()).Put(item).RunWithContext(ctx)
 	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
-	}
-
-	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameSavedItemsCount, float64(1))
-	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 	}
 
 	return nil
@@ -85,9 +92,11 @@ func (repository *Repository) SaveItemWithContext(ctx context.Context, key KeyIn
 // UpdateWithContext updates item by key; it accepts an expression (Set, SetSet, SetIfNotExists, SetExpr); key is the key to be updated;
 // values contains the values that should be used in the update; context which used to enable log with context
 // returns error in case of error
-func (repository *Repository) UpdateWithContext(ctx context.Context, expression UpdateExpression, key KeyInterface, values map[string]interface{}) error {
-	if err := isValidKey(key); err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
+func (repository Repository) UpdateWithContext(ctx context.Context, expression UpdateExpression, key KeyInterface, values map[string]interface{}) error {
+	var err error
+	defer repository.recordMetrics(ctx, OpUpdate, key, &err)()
+
+	if err = isValidKey(key); err != nil {
 		return err
 	}
 
@@ -115,29 +124,22 @@ func (repository *Repository) UpdateWithContext(ctx context.Context, expression 
 		if expression == SetExpr {
 			valueSlice, err := InterfaceToArrayOfInterface(value)
 			if err != nil {
-				repository.log.error(ctx, key.TableName(), err.Error())
 				return err
 			}
 			update.SetExpr(expr, valueSlice...)
 		}
 	}
 
-	err := update.RunWithContext(ctx)
+	err = update.RunWithContext(ctx)
 	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
-	}
-
-	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameUpdatedItemsCount, float64(1))
-	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 	}
 
 	return nil
 }
 
-func (repository *Repository) prepareUpdateWithUpdateExpressions(
-	ctx context.Context,
+func (repository Repository) prepareUpdateWithUpdateExpressions(
+	_ context.Context,
 	key KeyInterface,
 	updateExpressions UpdateExpressions,
 ) (*dynamo.Update, error) {
@@ -172,7 +174,6 @@ func (repository *Repository) prepareUpdateWithUpdateExpressions(
 			if expression == SetExpr {
 				valueSlice, err := InterfaceToArrayOfInterface(value)
 				if err != nil {
-					repository.log.error(ctx, key.TableName(), err.Error())
 					return nil, err
 				}
 				update.SetExpr(expr, valueSlice...)
@@ -186,26 +187,22 @@ func (repository *Repository) prepareUpdateWithUpdateExpressions(
 // UpdateWithUpdateExpressions updates an item with update expressions defined at field level, enabling you to set
 // different update expressions for each field. The first key of the updateMap specifies the Update expression to use
 // for the expressions in the map
-func (repository *Repository) UpdateWithUpdateExpressions(
+func (repository Repository) UpdateWithUpdateExpressions(
 	ctx context.Context,
 	key KeyInterface,
 	updateExpressions UpdateExpressions,
 ) error {
+	var err error
+	defer repository.recordMetrics(ctx, OpUpdate, key, &err)()
+
 	update, err := repository.prepareUpdateWithUpdateExpressions(ctx, key, updateExpressions)
 	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
 	err = update.RunWithContext(ctx)
 	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
-	}
-
-	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameUpdatedItemsCount, float64(1))
-	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 	}
 
 	return nil
@@ -214,27 +211,23 @@ func (repository *Repository) UpdateWithUpdateExpressions(
 // UpdateWithUpdateExpressionsAndReturnValue updates an item with update expressions defined at field level and returns
 // the item, as it appears after the update, enabling you to set different update expressions for each field. The first
 // key of the updateMap specifies the Update expression to use for the expressions in the map
-func (repository *Repository) UpdateWithUpdateExpressionsAndReturnValue(
+func (repository Repository) UpdateWithUpdateExpressionsAndReturnValue(
 	ctx context.Context,
 	key KeyInterface,
 	item interface{},
 	updateExpressions UpdateExpressions,
 ) error {
+	var err error
+	defer repository.recordMetrics(ctx, OpUpdate, key, &err)()
+
 	update, err := repository.prepareUpdateWithUpdateExpressions(ctx, key, updateExpressions)
 	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
 	err = update.ValueWithContext(ctx, item)
 	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
-	}
-
-	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameUpdatedItemsCount, float64(1))
-	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 	}
 
 	return nil
@@ -243,17 +236,19 @@ func (repository *Repository) UpdateWithUpdateExpressionsAndReturnValue(
 // ConditionalUpdateWithUpdateExpressionsAndReturnValue updates an item with update expressions and a condition.
 // If the condition is met, the item will be updated and returned as it appears after the update.
 // The first key of the updateMap specifies the Update expression to use for the expressions in the map
-func (repository *Repository) ConditionalUpdateWithUpdateExpressionsAndReturnValue(
+func (repository Repository) ConditionalUpdateWithUpdateExpressionsAndReturnValue(
 	ctx context.Context,
 	key KeyInterface,
 	item interface{},
 	updateExpressions UpdateExpressions,
 	conditionExpression string,
 	conditionArgs ...interface{},
-) (conditionMet bool, err error) {
+) (bool, error) {
+	var err error
+	defer repository.recordMetrics(ctx, OpUpdate, key, &err)()
+
 	update, err := repository.prepareUpdateWithUpdateExpressions(ctx, key, updateExpressions)
 	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
@@ -262,16 +257,11 @@ func (repository *Repository) ConditionalUpdateWithUpdateExpressionsAndReturnVal
 	err = update.ValueWithContext(ctx, item)
 	if err != nil {
 		if awsError, ok := err.(awserr.Error); ok && awsError.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
-			repository.log.info(ctx, key.TableName(), dynamodb.ErrCodeConditionalCheckFailedException)
+			repository.log.WithContext(ctx).WithField(TableName, key.TableName()).Info(dynamodb.ErrCodeConditionalCheckFailedException)
 			return false, nil
 		}
-		repository.log.error(ctx, key.TableName(), err.Error())
-		return false, err
-	}
 
-	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameUpdatedItemsCount, float64(1))
-	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
+		return false, err
 	}
 
 	return true, nil
@@ -279,10 +269,11 @@ func (repository *Repository) ConditionalUpdateWithUpdateExpressionsAndReturnVal
 
 // DeleteItemWithContext item by its key; it accepts key of item to be deleted; context which used to enable log with context
 // returns error in case of error
-func (repository *Repository) DeleteItemWithContext(ctx context.Context, key KeyInterface) error {
+func (repository Repository) DeleteItemWithContext(ctx context.Context, key KeyInterface) error {
+	var err error
+	defer repository.recordMetrics(ctx, OpDelete, key, &err)()
 
-	if err := isValidKey(key); err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
+	if err = isValidKey(key); err != nil {
 		return err
 	}
 	// by hash
@@ -293,15 +284,9 @@ func (repository *Repository) DeleteItemWithContext(ctx context.Context, key Key
 		delete = delete.Range(*key.RangeKeyName(), key.RangeKey())
 	}
 
-	err := delete.RunWithContext(ctx)
+	err = delete.RunWithContext(ctx)
 	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
-	}
-
-	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameDeleteItemsCount, float64(1))
-	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 	}
 
 	return nil
@@ -309,10 +294,11 @@ func (repository *Repository) DeleteItemWithContext(ctx context.Context, key Key
 
 // SaveItemsWithContext batch save a slice of items by key; it accepts key of item to be saved; item to be saved; context which used to enable log with context
 // returns error in case of error
-func (repository *Repository) SaveItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) error {
+func (repository Repository) SaveItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) error {
+	var err error
+	defer repository.recordMetrics(ctx, OpCommit, key, &err)()
 
-	if err := isValidKey(key); err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
+	if err = isValidKey(key); err != nil {
 		return err
 	}
 
@@ -325,19 +311,12 @@ func (repository *Repository) SaveItemsWithContext(ctx context.Context, key KeyI
 
 	itemSlice, err := InterfaceToArrayOfInterface(items)
 	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
 	}
 
-	count, err := batch.Write().Put(itemSlice...).RunWithContext(ctx)
+	_, err = batch.Write().Put(itemSlice...).RunWithContext(ctx)
 	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return err
-	}
-
-	err = repository.metrics.Publish(ctx, key.TableName(), MetricNameSavedItemsCount, float64(count))
-	if err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
 	}
 
 	return nil
@@ -345,13 +324,15 @@ func (repository *Repository) SaveItemsWithContext(ctx context.Context, key KeyI
 
 // DeleteItemsWithContext deletes items matching the keys; it accepts array of keys to be deleted; context which used to enable log with context
 // returns error in case of error
-func (repository *Repository) DeleteItemsWithContext(ctx context.Context, keys []KeyInterface) error {
+func (repository Repository) DeleteItemsWithContext(ctx context.Context, keys []KeyInterface) error {
+	var err error
+	defer repository.recordMultipleMetrics(ctx, OpDelete, keys, &err)()
+
 	if len(keys) == 0 {
 		return nil
 	}
 	for i := 0; i < len(keys); i++ {
-		if err := isValidKey(keys[i]); err != nil {
-			repository.log.error(ctx, keys[i].TableName(), err.Error())
+		if err = isValidKey(keys[i]); err != nil {
 			return err
 		}
 	}
@@ -368,15 +349,9 @@ func (repository *Repository) DeleteItemsWithContext(ctx context.Context, keys [
 		dynamoKeys[i] = dynamo.Keyed(keys[i])
 	}
 
-	count, err := batch.Write().Delete(dynamoKeys...).RunWithContext(ctx)
+	_, err = batch.Write().Delete(dynamoKeys...).RunWithContext(ctx)
 	if err != nil {
-		repository.log.error(ctx, keys[0].TableName(), err.Error())
 		return err
-	}
-
-	err = repository.metrics.Publish(ctx, keys[0].TableName(), MetricNameDeleteItemsCount, float64(count))
-	if err != nil {
-		repository.log.error(ctx, keys[0].TableName(), err.Error())
 	}
 
 	return nil
@@ -385,20 +360,21 @@ func (repository *Repository) DeleteItemsWithContext(ctx context.Context, keys [
 // GetItemsWithContext by key; it accepts a key interface that is used to get the table name, hash key and range key if it exists;
 // context which used to enable log with context, the output will be given in items
 // returns true if items are found, returns false and nil if no items found, returns false and error in case of error
-func (repository *Repository) GetItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error) {
-	if err := isValidKey(key); err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
+func (repository Repository) GetItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error) {
+	var err error
+	defer repository.recordMetrics(ctx, OpRead, key, &err)()
+
+	if err = isValidKey(key); err != nil {
 		return false, err
 	}
 
-	err := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).AllWithContext(ctx, items)
+	err = repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey()).AllWithContext(ctx, items)
 	if err != nil {
-		if err == dynamo.ErrNotFound {
-			repository.log.info(ctx, key.TableName(), ErrNoItemFound.Error())
+		if errors.Is(err, dynamo.ErrNotFound) {
+			repository.log.WithContext(ctx).WithField(TableName, key.TableName()).Info(ErrNoItemFound.Error())
 			return false, nil
 		}
 
-		repository.log.error(ctx, key.TableName(), err.Error())
 		return false, err
 	}
 
@@ -419,13 +395,13 @@ func (repository *Repository) GetItemsWithContext(ctx context.Context, key KeyIn
 // QueryWithContext by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
 // context which used to enable log with context, the output will be given in items
 // returns error in case of error
-func (repository *Repository) QueryWithContext(ctx context.Context, query QueryInterface, item interface{}) error {
+func (repository Repository) QueryWithContext(ctx context.Context, query QueryInterface, item interface{}) (err error) {
+	defer repository.recordMetrics(ctx, OpRead, query, &err)()
 
 	if !IsPointerOFSlice(item) {
 		return ErrInvalidPointerSliceType
 	}
-	if err := isValidKey(query); err != nil {
-		repository.log.error(ctx, query.TableName(), err.Error())
+	if err = isValidKey(query); err != nil {
 		return err
 	}
 
@@ -444,9 +420,8 @@ func (repository *Repository) QueryWithContext(ctx context.Context, query QueryI
 		q = q.Order(dynamo.Descending)
 	}
 
-	err := q.AllWithContext(ctx, item)
+	err = q.AllWithContext(ctx, item)
 	if err != nil {
-		repository.log.error(ctx, query.TableName(), err.Error())
 		return err
 	}
 
@@ -455,6 +430,9 @@ func (repository *Repository) QueryWithContext(ctx context.Context, query QueryI
 
 // OptimisticLockSaveWithContext saves an item if the version attribute on the server matches the version of the object
 func (repository Repository) OptimisticLockSaveWithContext(ctx context.Context, key KeyInterface, item interface{}) (bool, error) {
+	var err error
+	defer repository.recordMetrics(ctx, OpCommit, key, &err)()
+
 	model, isDjoemoModel := item.(ModelInterface)
 	if !isDjoemoModel {
 		return false, errors.New("Items to use with OptimisticLock must implement the ModelInterface")
@@ -467,13 +445,13 @@ func (repository Repository) OptimisticLockSaveWithContext(ctx context.Context, 
 
 	update := repository.table(key.TableName()).Put(item).If("attribute_not_exists(Version) OR Version = ?", currentVersion)
 
-	err := update.Run()
+	err = update.Run()
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok && awserr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
-			repository.log.info(ctx, key.TableName(), dynamodb.ErrCodeConditionalCheckFailedException)
+			repository.log.WithContext(ctx).WithField(TableName, key.TableName()).Info(dynamodb.ErrCodeConditionalCheckFailedException)
 			return false, nil
 		}
-		repository.log.error(ctx, key.TableName(), err.Error())
+
 		return false, err
 	}
 	return true, nil
@@ -481,93 +459,43 @@ func (repository Repository) OptimisticLockSaveWithContext(ctx context.Context, 
 
 // ConditionalUpdateWithContext updates an item when the condition is met, otherwise the update will be rejected
 func (repository Repository) ConditionalUpdateWithContext(ctx context.Context, key KeyInterface, item interface{}, expression string, expressionArgs ...interface{}) (bool, error) {
+	var err error
+	defer repository.recordMetrics(ctx, OpUpdate, key, &err)()
+
 	update := repository.table(key.TableName()).Put(item).If(expression, expressionArgs...)
 
-	err := update.Run()
+	err = update.Run()
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok && awserr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
-			repository.log.info(ctx, key.TableName(), dynamodb.ErrCodeConditionalCheckFailedException)
+			repository.log.WithContext(ctx).WithField(TableName, key.TableName()).Info(dynamodb.ErrCodeConditionalCheckFailedException)
 			return false, nil
 		}
-		repository.log.error(ctx, key.TableName(), err.Error())
+
 		return false, err
 	}
 	return true, nil
 }
 
-// GetItem get item; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in item
-// returns true if item is found, returns false and nil if no item found, returns false and an error in case of error
-func (repository Repository) GetItem(key KeyInterface, item interface{}) (bool, error) {
-	return repository.GetItemWithContext(context.TODO(), key, item)
-}
-
-// SaveItem item; it accepts a key interface, that is used to get the table name; item is the item to be saved
-// returns error in case of error
-func (repository Repository) SaveItem(key KeyInterface, item interface{}) error {
-	return repository.SaveItemWithContext(context.TODO(), key, item)
-}
-
-// Update updates item by key; it accepts an expression (Set, SetSet, SetIfNotExists, SetExpr); key is the key to be updated;
-// values contains the values that should be used in the update;
-// returns error in case of error
-func (repository Repository) Update(expression UpdateExpression, key KeyInterface, values map[string]interface{}) error {
-	return repository.UpdateWithContext(context.TODO(), expression, key, values)
-}
-
-// DeleteItem item by key; returns error in case of error
-func (repository Repository) DeleteItem(key KeyInterface) error {
-	return repository.DeleteItemWithContext(context.TODO(), key)
-}
-
-// SaveItems batch save a slice of items by key
-func (repository Repository) SaveItems(key KeyInterface, items interface{}) error {
-	return repository.SaveItemsWithContext(context.TODO(), key, items)
-}
-
-// DeleteItems deletes items matching the keys
-func (repository Repository) DeleteItems(keys []KeyInterface) error {
-	return repository.DeleteItemsWithContext(context.TODO(), keys)
-}
-
-// GetItems by key; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in items
-// returns true if items are found, returns false and nil if no items found, returns false and error in case of error
-func (repository Repository) GetItems(key KeyInterface, items interface{}) (bool, error) {
-	return repository.GetItemsWithContext(context.TODO(), key, items)
-}
-
-// Query by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
-// returns error in case of error
-func (repository Repository) Query(query QueryInterface, item interface{}) error {
-	return repository.QueryWithContext(context.TODO(), query, item)
-}
-
-// OptimisticLockSave updates an item if the version attribute on the server matches the one of the object
-func (repository Repository) OptimisticLockSave(key KeyInterface, item interface{}) (bool, error) {
-	return repository.OptimisticLockSaveWithContext(context.TODO(), key, item)
-}
-
-// ConditionalUpdate updates an item when the condition is met, otherwise the update will be rejected
-func (repository Repository) ConditionalUpdate(key KeyInterface, item interface{}, expression string, expressionArgs ...interface{}) (bool, error) {
-	return repository.ConditionalUpdateWithContext(context.TODO(), key, item, expression, expressionArgs)
-}
-
 // GIndex creates an index repository by name
-func (repository Repository) GIndex(name string) GlobalIndexInterface {
-	return GlobalIndex{
+func (repository *Repository) GIndex(name string) GlobalIndexInterface {
+	return &GlobalIndex{
 		name:         name,
 		log:          repository.log,
 		dynamoClient: repository.dynamoClient,
+		metrics:      repository.metrics,
 	}
 }
 
-func (repository Repository) table(tableName string) dynamo.Table {
+func (repository *Repository) table(tableName string) dynamo.Table {
 	return repository.dynamoClient.Table(tableName)
 }
 
 // ScanIteratorWithContext returns an instance of an Iterator that provides methods for scanning tables
-func (repository Repository) ScanIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (IteratorInterface, error) {
-	if err := isValidTableName(key); err != nil {
-		repository.log.error(ctx, key.TableName(), err.Error())
+func (repository *Repository) ScanIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (IteratorInterface, error) {
+	var err error
+	defer repository.recordMetrics(ctx, OpRead, key, &err)()
+
+	if err = isValidTableName(key); err != nil {
 		return nil, err
 	}
 
@@ -589,7 +517,10 @@ func (repository Repository) ScanIteratorWithContext(ctx context.Context, key Ke
 // BatchGetItemsWithContext gets multiple items by their keys; all keys must refer to the same table.
 // out must be a pointer to a slice of your model type.
 // Returns (true, nil) if at least one item is found, (false, nil) if none found, or (false, err) on error.
-func (repository *Repository) BatchGetItemsWithContext(ctx context.Context, keys []KeyInterface, out interface{}) (bool, error) {
+func (repository Repository) BatchGetItemsWithContext(ctx context.Context, keys []KeyInterface, out interface{}) (bool, error) {
+	var err error
+	defer repository.recordMultipleMetrics(ctx, OpRead, keys, &err)()
+
 	if len(keys) == 0 {
 		return false, nil
 	}
@@ -597,14 +528,11 @@ func (repository *Repository) BatchGetItemsWithContext(ctx context.Context, keys
 	// Validate keys and ensure they all point to the same table
 	tableName := keys[0].TableName()
 	for i := 0; i < len(keys); i++ {
-		if err := isValidKey(keys[i]); err != nil {
-			repository.log.error(ctx, keys[i].TableName(), err.Error())
+		if err = isValidKey(keys[i]); err != nil {
 			return false, err
 		}
 		if keys[i].TableName() != tableName {
-			err := errors.New("BatchGetItemsWithContext: all keys must belong to the same table")
-			repository.log.error(ctx, tableName, err.Error())
-			return false, err
+			return false, ErrInvalidBatchRequest
 		}
 	}
 
@@ -622,14 +550,12 @@ func (repository *Repository) BatchGetItemsWithContext(ctx context.Context, keys
 	}
 
 	// Execute batch get
-	err := batch.Get(dKeys...).AllWithContext(ctx, out)
+	err = batch.Get(dKeys...).AllWithContext(ctx, out)
 	if err != nil {
 		if errors.Is(err, dynamo.ErrNotFound) {
-			repository.log.info(ctx, tableName, ErrNoItemFound.Error())
+			repository.log.WithContext(ctx).WithField(TableName, tableName).Info(ErrNoItemFound.Error())
 			return false, nil
 		}
-
-		repository.log.error(ctx, tableName, err.Error())
 		return false, err
 	}
 
@@ -646,4 +572,28 @@ func (repository *Repository) BatchGetItemsWithContext(ctx context.Context, keys
 	}
 
 	return true, nil
+}
+
+func (repository Repository) recordMetrics(ctx context.Context, op string, key KeyInterface, err *error) func() {
+	start := time.Now()
+	return func() {
+		repository.metrics.Record(ctx, op, key, time.Since(start), isOpSuccess(err))
+	}
+}
+
+func (repository Repository) recordMultipleMetrics(ctx context.Context, op string, keys []KeyInterface, err *error) func() {
+	start := time.Now()
+	return func() {
+		duration := time.Since(start)
+		for _, key := range keys {
+			repository.metrics.Record(ctx, op, key, duration, isOpSuccess(err))
+		}
+	}
+}
+
+func isOpSuccess(err *error) bool {
+	if err == nil || *err == nil {
+		return true
+	}
+	return errors.Is(*err, dynamo.ErrNotFound)
 }

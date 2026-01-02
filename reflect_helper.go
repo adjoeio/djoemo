@@ -4,7 +4,7 @@ import (
 	"reflect"
 )
 
-//InterfaceToArrayOfInterface transforms interface of slice to slice of interfaces
+// InterfaceToArrayOfInterface transforms interface of slice to slice of interfaces
 func InterfaceToArrayOfInterface(sliceOfItems interface{}) ([]interface{}, error) {
 	s := reflect.ValueOf(sliceOfItems)
 	if s.Kind() != reflect.Slice {

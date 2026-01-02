@@ -417,7 +417,6 @@ func (d *DynamoMock) WithTable(name string) DynamoDBOption {
 	return func(args *DynamoMock) {
 		args.TableName = name
 	}
-
 }
 
 // WithError register error to call note its on mock scope
@@ -425,7 +424,6 @@ func (d *DynamoMock) WithError(err error) DynamoDBOption {
 	return func(args *DynamoMock) {
 		args.Err = err
 	}
-
 }
 
 // Exec execute all registered calls with its options
@@ -483,7 +481,6 @@ func (d *DynamoMock) batchGetInput() *dynamodb.BatchGetItemInput {
 			}
 			keys = append(keys, key)
 		}
-
 	}
 	req := &dynamodb.BatchGetItemInput{
 		RequestItems: map[string]*dynamodb.KeysAndAttributes{
