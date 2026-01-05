@@ -1,0 +1,58 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.26.0'
+
+    - name: Install Ginkgo
+      run: go install github.com/onsi/ginkgo/v2/ginkgo@v2.27.5
+
+    - name: Vendor
+      run: go mod tidy; go mod vendor
+
+    - name: Test
+      run: GO111MODULE=on CGO_ENABLED=0 ginkgo -r -mod=vendor -cover --timeout 1m -output-dir=. -coverprofile=.coverage -gcflags "all=-l"  ./
+
+    - name: Check code coverage
+      id: coverage
+      run: |
+        coverage=$(go tool cover -func=.coverage | grep total: | awk '{print substr($3, 1, length($3)-1)}')
+        echo "Total coverage: $coverage"
+        echo "coverage=$coverage" >> $GITHUB_OUTPUT
+
+    - name: Compare code coverage with base branch
+      if: github.event_name == 'pull_request'
+      run: |
+        BASE_SHA=$(jq -r .pull_request.base.sha "$GITHUB_EVENT_PATH")
+        git fetch origin $BASE_SHA
+        git checkout $BASE_SHA
+        go mod tidy; go mod vendor
+        GO111MODULE=on CGO_ENABLED=0 ginkgo -r -mod=vendor -cover --timeout 1m -output-dir=. -coverprofile=.coverage.base -gcflags "all=-l"  ./
+        base_coverage=$(go tool cover -func=.coverage.base | grep total: | awk '{print substr($3, 1, length($3)-1)}')
+        echo "Base coverage: $base_coverage"
+        echo "base_coverage=$base_coverage" >> $GITHUB_OUTPUT
+        git checkout -
+        current_coverage="${{ steps.coverage.outputs.coverage }}"
+        base_cov_int=${base_coverage%.*}
+        curr_cov_int=${current_coverage%.*}
+        if (( $(echo "$curr_cov_int < $base_cov_int" | bc -l) )); then
+          echo "Code coverage ($current_coverage%) is less than base branch ($base_coverage%)."
+          exit 1
+        fi
