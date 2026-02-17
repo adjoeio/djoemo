@@ -2,7 +2,7 @@ module github.com/adjoeio/djoemo
 
 require (
 	github.com/aws/aws-sdk-go v1.19.1
-	github.com/bouk/monkey v1.0.1
+	github.com/golang/mock v1.6.0
 	github.com/guregu/dynamo v1.2.1
 	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/onsi/gomega v1.34.2
@@ -11,7 +11,6 @@ require (
 )
 
 require (
-	bou.ke/monkey v1.0.2 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect

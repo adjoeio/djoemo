@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/bouk/monkey"
+	"github.com/adjoeio/djoemo"
 	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 
@@ -235,13 +235,17 @@ var _ = Describe("Repository", func() {
 	})
 
 	Describe("Optimistic Lock Save", func() {
-		It("should save an item with optimistic Locking", func() {
+		djoemoTimeNow := djoemo.Now
+		BeforeEach(func() {
 			now := time.Date(2019, 1, 1, 12, 15, 0, 0, time.UTC)
-
-			monkey.Patch(time.Now, func() time.Time {
-				return now
-			})
-
+			djoemo.Now = func() djoemo.DjoemoTime {
+				return djoemo.DjoemoTime{Time: now}
+			}
+		})
+		AfterEach(func() {
+			djoemo.Now = djoemoTimeNow
+		})
+		It("should save an item with optimistic Locking", func() {
 			type DjoemoUser struct {
 				Model
 				User
