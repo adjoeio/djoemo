@@ -159,3 +159,27 @@ func (gi GlobalIndex) QueryWithContext(ctx context.Context, query QueryInterface
 func (gi GlobalIndex) Query(query QueryInterface, item interface{}) error {
 	return gi.QueryWithContext(context.TODO(), query, item)
 }
+
+// GetItemsIteratorWithContext returns an instance of an Iterator that provides methods for executing the query
+func (gi GlobalIndex) GetItemsIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (IteratorInterface, error) {
+	if err := isValidTableName(key); err != nil {
+		gi.log.error(ctx, key.TableName(), err.Error())
+		return nil, err
+	}
+
+	q := gi.table(key.TableName()).
+		Get(*key.HashKeyName(), key.HashKey()).
+		Index(gi.name)
+
+	iter := q.Iter()
+
+	itr := &QueryIterator{
+		query:       q,
+		tableName:   key.TableName(),
+		searchLimit: searchLimit,
+		iterator:    iter,
+		ctx:         ctx,
+	}
+
+	return itr, nil
+}

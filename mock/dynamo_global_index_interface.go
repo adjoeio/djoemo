@@ -80,6 +80,21 @@ func (mr *MockGlobalIndexInterfaceMockRecorder) GetItems(key, items interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItems", reflect.TypeOf((*MockGlobalIndexInterface)(nil).GetItems), key, items)
 }
 
+// GetItemsIteratorWithContext mocks base method.
+func (m *MockGlobalIndexInterface) GetItemsIteratorWithContext(ctx context.Context, key djoemo.KeyInterface, searchLimit int64) (djoemo.IteratorInterface, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetItemsIteratorWithContext", ctx, key, searchLimit)
+	ret0, _ := ret[0].(djoemo.IteratorInterface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetItemsIteratorWithContext indicates an expected call of GetItemsIteratorWithContext.
+func (mr *MockGlobalIndexInterfaceMockRecorder) GetItemsIteratorWithContext(ctx, key, searchLimit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemsIteratorWithContext", reflect.TypeOf((*MockGlobalIndexInterface)(nil).GetItemsIteratorWithContext), ctx, key, searchLimit)
+}
+
 // GetItemsWithContext mocks base method.
 func (m *MockGlobalIndexInterface) GetItemsWithContext(ctx context.Context, key djoemo.KeyInterface, items interface{}) (bool, error) {
 	m.ctrl.T.Helper()
