@@ -586,6 +586,27 @@ func (repository Repository) ScanIteratorWithContext(ctx context.Context, key Ke
 	return itr, nil
 }
 
+// GetItemsIteratorWithContext returns an instance of an Iterator that provides methods for executing the query
+func (repository Repository) GetItemsIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (IteratorInterface, error) {
+	if err := isValidTableName(key); err != nil {
+		repository.log.error(ctx, key.TableName(), err.Error())
+		return nil, err
+	}
+
+	q := repository.table(key.TableName()).Get(*key.HashKeyName(), key.HashKey())
+
+	iter := q.Iter()
+	itr := &QueryIterator{
+		query:       q,
+		tableName:   key.TableName(),
+		searchLimit: searchLimit,
+		iterator:    iter,
+		ctx:         ctx,
+	}
+
+	return itr, nil
+}
+
 // BatchGetItemsWithContext gets multiple items by their keys; all keys must refer to the same table.
 // out must be a pointer to a slice of your model type.
 // Returns (true, nil) if at least one item is found, (false, nil) if none found, or (false, err) on error.

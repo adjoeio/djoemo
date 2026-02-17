@@ -17,6 +17,9 @@ type GlobalIndexInterface interface {
 	// returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 	GetItemsWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error)
 
+	// GetItemsIteratorWithContext returns an instance of an Iterator that provides methods for executing the query
+	GetItemsIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (IteratorInterface, error)
+
 	// GetItemsWithRangeWithContext same as GetItemsWithContext, but also respects range key
 	GetItemsWithRangeWithContext(ctx context.Context, key KeyInterface, items interface{}) (bool, error)
 

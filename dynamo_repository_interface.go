@@ -85,6 +85,9 @@ type RepositoryInterface interface {
 	// returns true if items are found, returns false and nil if no items found, returns false and error in case of error
 	GetItemsWithContext(ctx context.Context, key KeyInterface, out interface{}) (bool, error)
 
+	// GetItemsIteratorWithContext returns an instance of an Iterator that provides methods for executing the query
+	GetItemsIteratorWithContext(ctx context.Context, key KeyInterface, searchLimit int64) (IteratorInterface, error)
+
 	// QueryWithContext by query; it accepts a query interface that is used to get the table name, hash key and range key with its operator if it exists;
 	// context which used to enable log with context, the output will be given in items
 	// returns error in case of error

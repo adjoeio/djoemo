@@ -12,7 +12,7 @@ import (
 // TimeFormatStandard is a mysql time.Time type with some helper functions
 const TimeFormatStandard = "2006-01-02T15:04:05.000Z07:00"
 
-//TenYears ...
+// TenYears ...
 const TenYears = time.Duration(time.Hour * 24 * 365 * 10)
 
 // RFC3339Milli with millisecond precision
@@ -33,7 +33,7 @@ type DjoemoTime struct {
 }
 
 // Date returns the Time corresponding to
-//	yyyy-mm-dd hh:mm:ss + nsec nanoseconds
+// yyyy-mm-dd hh:mm:ss + nsec nanoseconds
 func Date(year int, month time.Month, day, hour, min, sec, nsec int, loc *time.Location) DjoemoTime {
 	return DjoemoTime{Time: time.Date(year, month, day, hour, min, sec, nsec, loc)}
 }
@@ -61,7 +61,7 @@ func (dt DjoemoTime) MarshalJSON() ([]byte, error) {
 	return json.Marshal(dt.Time.Format(TimeFormatStandard))
 }
 
-//MarshalDynamoDBAttributeValue ...
+// MarshalDynamoDBAttributeValue ...
 func (dt *DjoemoTime) MarshalDynamoDBAttributeValue(av *dynamodb.AttributeValue) error {
 	unix := int64(0)
 	if dt != nil {
@@ -113,7 +113,7 @@ func (dt *DjoemoTime) UnmarshalDynamoDBAttributeValue(av *dynamodb.AttributeValu
 }
 
 // Now returns the current local time.
-func Now() DjoemoTime {
+var Now = func() DjoemoTime {
 
 	t := time.Now()
 	// solves docker issue:
