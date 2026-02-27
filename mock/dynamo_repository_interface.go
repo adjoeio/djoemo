@@ -9,7 +9,8 @@ import (
 	reflect "reflect"
 
 	djoemo "github.com/adjoeio/djoemo"
-	gomock "github.com/golang/mock/gomock"
+	prometheus "github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/mock/gomock"
 )
 
 // MockRepositoryInterface is a mock of RepositoryInterface interface.
@@ -36,7 +37,7 @@ func (m *MockRepositoryInterface) EXPECT() *MockRepositoryInterfaceMockRecorder 
 }
 
 // BatchGetItemsWithContext mocks base method.
-func (m *MockRepositoryInterface) BatchGetItemsWithContext(ctx context.Context, keys []djoemo.KeyInterface, out interface{}) (bool, error) {
+func (m *MockRepositoryInterface) BatchGetItemsWithContext(ctx context.Context, keys []djoemo.KeyInterface, out any) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BatchGetItemsWithContext", ctx, keys, out)
 	ret0, _ := ret[0].(bool)
@@ -50,28 +51,8 @@ func (mr *MockRepositoryInterfaceMockRecorder) BatchGetItemsWithContext(ctx, key
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchGetItemsWithContext", reflect.TypeOf((*MockRepositoryInterface)(nil).BatchGetItemsWithContext), ctx, keys, out)
 }
 
-// ConditionalUpdate mocks base method.
-func (m *MockRepositoryInterface) ConditionalUpdate(key djoemo.KeyInterface, item interface{}, expression string, expressionArgs ...interface{}) (bool, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{key, item, expression}
-	for _, a := range expressionArgs {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "ConditionalUpdate", varargs...)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ConditionalUpdate indicates an expected call of ConditionalUpdate.
-func (mr *MockRepositoryInterfaceMockRecorder) ConditionalUpdate(key, item, expression interface{}, expressionArgs ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{key, item, expression}, expressionArgs...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConditionalUpdate", reflect.TypeOf((*MockRepositoryInterface)(nil).ConditionalUpdate), varargs...)
-}
-
 // ConditionalUpdateWithContext mocks base method.
-func (m *MockRepositoryInterface) ConditionalUpdateWithContext(ctx context.Context, key djoemo.KeyInterface, item interface{}, expression string, expressionArgs ...interface{}) (bool, error) {
+func (m *MockRepositoryInterface) ConditionalUpdateWithContext(ctx context.Context, key djoemo.KeyInterface, item any, expression string, expressionArgs ...any) (bool, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, key, item, expression}
 	for _, a := range expressionArgs {
@@ -91,7 +72,7 @@ func (mr *MockRepositoryInterfaceMockRecorder) ConditionalUpdateWithContext(ctx,
 }
 
 // ConditionalUpdateWithUpdateExpressionsAndReturnValue mocks base method.
-func (m *MockRepositoryInterface) ConditionalUpdateWithUpdateExpressionsAndReturnValue(ctx context.Context, key djoemo.KeyInterface, item interface{}, updateExpressions djoemo.UpdateExpressions, conditionExpression string, conditionArgs ...interface{}) (bool, error) {
+func (m *MockRepositoryInterface) ConditionalUpdateWithUpdateExpressionsAndReturnValue(ctx context.Context, key djoemo.KeyInterface, item any, updateExpressions djoemo.UpdateExpressions, conditionExpression string, conditionArgs ...any) (bool, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, key, item, updateExpressions, conditionExpression}
 	for _, a := range conditionArgs {
@@ -110,20 +91,6 @@ func (mr *MockRepositoryInterfaceMockRecorder) ConditionalUpdateWithUpdateExpres
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConditionalUpdateWithUpdateExpressionsAndReturnValue", reflect.TypeOf((*MockRepositoryInterface)(nil).ConditionalUpdateWithUpdateExpressionsAndReturnValue), varargs...)
 }
 
-// DeleteItem mocks base method.
-func (m *MockRepositoryInterface) DeleteItem(key djoemo.KeyInterface) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteItem", key)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteItem indicates an expected call of DeleteItem.
-func (mr *MockRepositoryInterfaceMockRecorder) DeleteItem(key interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteItem", reflect.TypeOf((*MockRepositoryInterface)(nil).DeleteItem), key)
-}
-
 // DeleteItemWithContext mocks base method.
 func (m *MockRepositoryInterface) DeleteItemWithContext(ctx context.Context, key djoemo.KeyInterface) error {
 	m.ctrl.T.Helper()
@@ -136,20 +103,6 @@ func (m *MockRepositoryInterface) DeleteItemWithContext(ctx context.Context, key
 func (mr *MockRepositoryInterfaceMockRecorder) DeleteItemWithContext(ctx, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteItemWithContext", reflect.TypeOf((*MockRepositoryInterface)(nil).DeleteItemWithContext), ctx, key)
-}
-
-// DeleteItems mocks base method.
-func (m *MockRepositoryInterface) DeleteItems(key []djoemo.KeyInterface) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteItems", key)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteItems indicates an expected call of DeleteItems.
-func (mr *MockRepositoryInterfaceMockRecorder) DeleteItems(key interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteItems", reflect.TypeOf((*MockRepositoryInterface)(nil).DeleteItems), key)
 }
 
 // DeleteItemsWithContext mocks base method.
@@ -180,23 +133,8 @@ func (mr *MockRepositoryInterfaceMockRecorder) GIndex(name interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GIndex", reflect.TypeOf((*MockRepositoryInterface)(nil).GIndex), name)
 }
 
-// GetItem mocks base method.
-func (m *MockRepositoryInterface) GetItem(key djoemo.KeyInterface, item interface{}) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetItem", key, item)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetItem indicates an expected call of GetItem.
-func (mr *MockRepositoryInterfaceMockRecorder) GetItem(key, item interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItem", reflect.TypeOf((*MockRepositoryInterface)(nil).GetItem), key, item)
-}
-
 // GetItemWithContext mocks base method.
-func (m *MockRepositoryInterface) GetItemWithContext(ctx context.Context, key djoemo.KeyInterface, item interface{}) (bool, error) {
+func (m *MockRepositoryInterface) GetItemWithContext(ctx context.Context, key djoemo.KeyInterface, item any) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetItemWithContext", ctx, key, item)
 	ret0, _ := ret[0].(bool)
@@ -210,23 +148,8 @@ func (mr *MockRepositoryInterfaceMockRecorder) GetItemWithContext(ctx, key, item
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemWithContext", reflect.TypeOf((*MockRepositoryInterface)(nil).GetItemWithContext), ctx, key, item)
 }
 
-// GetItems mocks base method.
-func (m *MockRepositoryInterface) GetItems(key djoemo.KeyInterface, items interface{}) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetItems", key, items)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetItems indicates an expected call of GetItems.
-func (mr *MockRepositoryInterfaceMockRecorder) GetItems(key, items interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItems", reflect.TypeOf((*MockRepositoryInterface)(nil).GetItems), key, items)
-}
-
 // GetItemsWithContext mocks base method.
-func (m *MockRepositoryInterface) GetItemsWithContext(ctx context.Context, key djoemo.KeyInterface, out interface{}) (bool, error) {
+func (m *MockRepositoryInterface) GetItemsWithContext(ctx context.Context, key djoemo.KeyInterface, out any) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetItemsWithContext", ctx, key, out)
 	ret0, _ := ret[0].(bool)
@@ -240,23 +163,8 @@ func (mr *MockRepositoryInterfaceMockRecorder) GetItemsWithContext(ctx, key, out
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemsWithContext", reflect.TypeOf((*MockRepositoryInterface)(nil).GetItemsWithContext), ctx, key, out)
 }
 
-// OptimisticLockSave mocks base method.
-func (m *MockRepositoryInterface) OptimisticLockSave(key djoemo.KeyInterface, item interface{}) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OptimisticLockSave", key, item)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// OptimisticLockSave indicates an expected call of OptimisticLockSave.
-func (mr *MockRepositoryInterfaceMockRecorder) OptimisticLockSave(key, item interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OptimisticLockSave", reflect.TypeOf((*MockRepositoryInterface)(nil).OptimisticLockSave), key, item)
-}
-
 // OptimisticLockSaveWithContext mocks base method.
-func (m *MockRepositoryInterface) OptimisticLockSaveWithContext(ctx context.Context, key djoemo.KeyInterface, item interface{}) (bool, error) {
+func (m *MockRepositoryInterface) OptimisticLockSaveWithContext(ctx context.Context, key djoemo.KeyInterface, item any) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OptimisticLockSaveWithContext", ctx, key, item)
 	ret0, _ := ret[0].(bool)
@@ -270,22 +178,8 @@ func (mr *MockRepositoryInterfaceMockRecorder) OptimisticLockSaveWithContext(ctx
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OptimisticLockSaveWithContext", reflect.TypeOf((*MockRepositoryInterface)(nil).OptimisticLockSaveWithContext), ctx, key, item)
 }
 
-// Query mocks base method.
-func (m *MockRepositoryInterface) Query(query djoemo.QueryInterface, item interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Query", query, item)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Query indicates an expected call of Query.
-func (mr *MockRepositoryInterfaceMockRecorder) Query(query, item interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockRepositoryInterface)(nil).Query), query, item)
-}
-
 // QueryWithContext mocks base method.
-func (m *MockRepositoryInterface) QueryWithContext(ctx context.Context, query djoemo.QueryInterface, item interface{}) error {
+func (m *MockRepositoryInterface) QueryWithContext(ctx context.Context, query djoemo.QueryInterface, item any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "QueryWithContext", ctx, query, item)
 	ret0, _ := ret[0].(error)
@@ -298,22 +192,8 @@ func (mr *MockRepositoryInterfaceMockRecorder) QueryWithContext(ctx, query, item
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryWithContext", reflect.TypeOf((*MockRepositoryInterface)(nil).QueryWithContext), ctx, query, item)
 }
 
-// SaveItem mocks base method.
-func (m *MockRepositoryInterface) SaveItem(key djoemo.KeyInterface, item interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveItem", key, item)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SaveItem indicates an expected call of SaveItem.
-func (mr *MockRepositoryInterfaceMockRecorder) SaveItem(key, item interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveItem", reflect.TypeOf((*MockRepositoryInterface)(nil).SaveItem), key, item)
-}
-
 // SaveItemWithContext mocks base method.
-func (m *MockRepositoryInterface) SaveItemWithContext(ctx context.Context, key djoemo.KeyInterface, item interface{}) error {
+func (m *MockRepositoryInterface) SaveItemWithContext(ctx context.Context, key djoemo.KeyInterface, item any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveItemWithContext", ctx, key, item)
 	ret0, _ := ret[0].(error)
@@ -326,22 +206,8 @@ func (mr *MockRepositoryInterfaceMockRecorder) SaveItemWithContext(ctx, key, ite
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveItemWithContext", reflect.TypeOf((*MockRepositoryInterface)(nil).SaveItemWithContext), ctx, key, item)
 }
 
-// SaveItems mocks base method.
-func (m *MockRepositoryInterface) SaveItems(key djoemo.KeyInterface, items interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveItems", key, items)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SaveItems indicates an expected call of SaveItems.
-func (mr *MockRepositoryInterfaceMockRecorder) SaveItems(key, items interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveItems", reflect.TypeOf((*MockRepositoryInterface)(nil).SaveItems), key, items)
-}
-
 // SaveItemsWithContext mocks base method.
-func (m *MockRepositoryInterface) SaveItemsWithContext(ctx context.Context, key djoemo.KeyInterface, items interface{}) error {
+func (m *MockRepositoryInterface) SaveItemsWithContext(ctx context.Context, key djoemo.KeyInterface, items any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveItemsWithContext", ctx, key, items)
 	ret0, _ := ret[0].(error)
@@ -369,22 +235,8 @@ func (mr *MockRepositoryInterfaceMockRecorder) ScanIteratorWithContext(ctx, key,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScanIteratorWithContext", reflect.TypeOf((*MockRepositoryInterface)(nil).ScanIteratorWithContext), ctx, key, searchLimit)
 }
 
-// Update mocks base method.
-func (m *MockRepositoryInterface) Update(expression djoemo.UpdateExpression, key djoemo.KeyInterface, values map[string]interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", expression, key, values)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Update indicates an expected call of Update.
-func (mr *MockRepositoryInterfaceMockRecorder) Update(expression, key, values interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepositoryInterface)(nil).Update), expression, key, values)
-}
-
 // UpdateWithContext mocks base method.
-func (m *MockRepositoryInterface) UpdateWithContext(ctx context.Context, expression djoemo.UpdateExpression, key djoemo.KeyInterface, values map[string]interface{}) error {
+func (m *MockRepositoryInterface) UpdateWithContext(ctx context.Context, expression djoemo.UpdateExpression, key djoemo.KeyInterface, values map[string]any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateWithContext", ctx, expression, key, values)
 	ret0, _ := ret[0].(error)
@@ -412,7 +264,7 @@ func (mr *MockRepositoryInterfaceMockRecorder) UpdateWithUpdateExpressions(ctx, 
 }
 
 // UpdateWithUpdateExpressionsAndReturnValue mocks base method.
-func (m *MockRepositoryInterface) UpdateWithUpdateExpressionsAndReturnValue(ctx context.Context, key djoemo.KeyInterface, item interface{}, updateExpressions djoemo.UpdateExpressions) error {
+func (m *MockRepositoryInterface) UpdateWithUpdateExpressionsAndReturnValue(ctx context.Context, key djoemo.KeyInterface, item any, updateExpressions djoemo.UpdateExpressions) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateWithUpdateExpressionsAndReturnValue", ctx, key, item, updateExpressions)
 	ret0, _ := ret[0].(error)
@@ -447,4 +299,18 @@ func (m *MockRepositoryInterface) WithMetrics(metricsInterface djoemo.MetricsInt
 func (mr *MockRepositoryInterfaceMockRecorder) WithMetrics(metricsInterface interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithMetrics", reflect.TypeOf((*MockRepositoryInterface)(nil).WithMetrics), metricsInterface)
+}
+
+// WithPrometheusMetrics mocks base method.
+func (m *MockRepositoryInterface) WithPrometheusMetrics(registry *prometheus.Registry) djoemo.RepositoryInterface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithPrometheusMetrics", registry)
+	ret0, _ := ret[0].(djoemo.RepositoryInterface)
+	return ret0
+}
+
+// WithPrometheusMetrics indicates an expected call of WithPrometheusMetrics.
+func (mr *MockRepositoryInterfaceMockRecorder) WithPrometheusMetrics(registry interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithPrometheusMetrics", reflect.TypeOf((*MockRepositoryInterface)(nil).WithPrometheusMetrics), registry)
 }

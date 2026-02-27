@@ -9,7 +9,8 @@ import (
 	reflect "reflect"
 
 	djoemo "github.com/adjoeio/djoemo"
-	gomock "github.com/golang/mock/gomock"
+	prometheus "github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/mock/gomock"
 )
 
 // MockGlobalIndexInterface is a mock of GlobalIndexInterface interface.
@@ -35,21 +36,6 @@ func (m *MockGlobalIndexInterface) EXPECT() *MockGlobalIndexInterfaceMockRecorde
 	return m.recorder
 }
 
-// GetItem mocks base method.
-func (m *MockGlobalIndexInterface) GetItem(key djoemo.KeyInterface, item interface{}) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetItem", key, item)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetItem indicates an expected call of GetItem.
-func (mr *MockGlobalIndexInterfaceMockRecorder) GetItem(key, item interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItem", reflect.TypeOf((*MockGlobalIndexInterface)(nil).GetItem), key, item)
-}
-
 // GetItemWithContext mocks base method.
 func (m *MockGlobalIndexInterface) GetItemWithContext(ctx context.Context, key djoemo.KeyInterface, item interface{}) (bool, error) {
 	m.ctrl.T.Helper()
@@ -63,21 +49,6 @@ func (m *MockGlobalIndexInterface) GetItemWithContext(ctx context.Context, key d
 func (mr *MockGlobalIndexInterfaceMockRecorder) GetItemWithContext(ctx, key, item interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemWithContext", reflect.TypeOf((*MockGlobalIndexInterface)(nil).GetItemWithContext), ctx, key, item)
-}
-
-// GetItems mocks base method.
-func (m *MockGlobalIndexInterface) GetItems(key djoemo.KeyInterface, items interface{}) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetItems", key, items)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetItems indicates an expected call of GetItems.
-func (mr *MockGlobalIndexInterfaceMockRecorder) GetItems(key, items interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItems", reflect.TypeOf((*MockGlobalIndexInterface)(nil).GetItems), key, items)
 }
 
 // GetItemsWithContext mocks base method.
@@ -110,20 +81,6 @@ func (mr *MockGlobalIndexInterfaceMockRecorder) GetItemsWithRangeWithContext(ctx
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemsWithRangeWithContext", reflect.TypeOf((*MockGlobalIndexInterface)(nil).GetItemsWithRangeWithContext), ctx, key, items)
 }
 
-// Query mocks base method.
-func (m *MockGlobalIndexInterface) Query(query djoemo.QueryInterface, item interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Query", query, item)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Query indicates an expected call of Query.
-func (mr *MockGlobalIndexInterfaceMockRecorder) Query(query, item interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockGlobalIndexInterface)(nil).Query), query, item)
-}
-
 // QueryWithContext mocks base method.
 func (m *MockGlobalIndexInterface) QueryWithContext(ctx context.Context, query djoemo.QueryInterface, item interface{}) error {
 	m.ctrl.T.Helper()
@@ -136,4 +93,42 @@ func (m *MockGlobalIndexInterface) QueryWithContext(ctx context.Context, query d
 func (mr *MockGlobalIndexInterfaceMockRecorder) QueryWithContext(ctx, query, item interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryWithContext", reflect.TypeOf((*MockGlobalIndexInterface)(nil).QueryWithContext), ctx, query, item)
+}
+
+// WithLog mocks base method.
+func (m *MockGlobalIndexInterface) WithLog(log djoemo.LogInterface) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "WithLog", log)
+}
+
+// WithLog indicates an expected call of WithLog.
+func (mr *MockGlobalIndexInterfaceMockRecorder) WithLog(log interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithLog", reflect.TypeOf((*MockGlobalIndexInterface)(nil).WithLog), log)
+}
+
+// WithMetrics mocks base method.
+func (m *MockGlobalIndexInterface) WithMetrics(metricsInterface djoemo.MetricsInterface) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "WithMetrics", metricsInterface)
+}
+
+// WithMetrics indicates an expected call of WithMetrics.
+func (mr *MockGlobalIndexInterfaceMockRecorder) WithMetrics(metricsInterface interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithMetrics", reflect.TypeOf((*MockGlobalIndexInterface)(nil).WithMetrics), metricsInterface)
+}
+
+// WithPrometheusMetrics mocks base method.
+func (m *MockGlobalIndexInterface) WithPrometheusMetrics(registry *prometheus.Registry) djoemo.GlobalIndexInterface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithPrometheusMetrics", registry)
+	ret0, _ := ret[0].(djoemo.GlobalIndexInterface)
+	return ret0
+}
+
+// WithPrometheusMetrics indicates an expected call of WithPrometheusMetrics.
+func (mr *MockGlobalIndexInterfaceMockRecorder) WithPrometheusMetrics(registry interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithPrometheusMetrics", reflect.TypeOf((*MockGlobalIndexInterface)(nil).WithPrometheusMetrics), registry)
 }

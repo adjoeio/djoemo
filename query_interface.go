@@ -4,6 +4,6 @@ package djoemo
 type QueryInterface interface {
 	KeyInterface
 	RangeOp() Operator
-	Limit()  *int64
+	Limit() *int64
 	Descending() bool
 }

@@ -25,7 +25,7 @@ func (m *Model) InitCreatedAt() {
 	}
 }
 
-//InitUpdatedAt sets the UpdatedAt
+// InitUpdatedAt sets the UpdatedAt
 func (m *Model) InitUpdatedAt() {
 	now := Now()
 	m.UpdatedAt = &now

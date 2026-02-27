@@ -1,6 +1,8 @@
 package djoemo
 
-import "github.com/guregu/dynamo"
+import (
+	"github.com/guregu/dynamo"
+)
 
 func valueFromPtr[T any](ptr *T) T {
 	if ptr == nil {

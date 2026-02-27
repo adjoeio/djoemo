@@ -1,6 +1,6 @@
 package djoemo
 
-// KeyInterface provides an interface for djoemo key used to identify item in djoemo table
+// Key provides an interface for djoemo key used to identify item in djoemo table
 type KeyInterface interface {
 	// TableName returns the djoemo table name
 	TableName() string
@@ -9,7 +9,7 @@ type KeyInterface interface {
 	// RangeKeyName returns the name of range key if exists
 	RangeKeyName() *string
 	// HashKey returns the hash key value
-	HashKey() interface{}
+	HashKey() any
 	// HashKey returns the range key value
-	RangeKey() interface{}
+	RangeKey() any
 }
