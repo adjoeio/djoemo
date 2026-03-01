@@ -20,7 +20,7 @@ var _ = Describe("Prometheus Metrics", func() {
 
 	BeforeEach(func() {
 		registry = prometheus.NewRegistry()
-		promMetrics := djoemo.NewPrometheusMetrics(registry)
+		promMetrics := djoemo.NewPrometheusMetrics(registry, nil)
 		metrics = djoemo.New()
 		metrics.Add(promMetrics)
 	})
@@ -34,19 +34,19 @@ var _ = Describe("Prometheus Metrics", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(mfs).NotTo(BeEmpty(), "expected metrics from Gather, got names: %v", metricFamilyNames(mfs))
 
-			// Find read counter and read_duration_seconds histogram (Prometheus adds _total to counters)
+			// Find read counter and read_duration_seconds histogram (with namespace/subsystem: adjoe_djoemo_*)
 			var readTotal *dto.MetricFamily
 			var readDuration *dto.MetricFamily
 			for _, mf := range mfs {
 				switch mf.GetName() {
-				case "read":
+				case "adjoe_djoemo_read":
 					readTotal = mf
-				case "read_duration_seconds":
+				case "adjoe_djoemo_read_duration_seconds":
 					readDuration = mf
 				}
 			}
-			Expect(readTotal).NotTo(BeNil(), "read_total counter should be registered, got: %v", metricFamilyNames(mfs))
-			Expect(readDuration).NotTo(BeNil(), "read_duration_seconds histogram should be registered, got: %v", metricFamilyNames(mfs))
+			Expect(readTotal).NotTo(BeNil(), "adjoe_djoemo_read_total counter should be registered, got: %v", metricFamilyNames(mfs))
+			Expect(readDuration).NotTo(BeNil(), "adjoe_djoemo_read_duration_seconds histogram should be registered, got: %v", metricFamilyNames(mfs))
 
 			// Counter: expect status=success, table=usertable
 			Expect(readTotal.GetMetric()).To(HaveLen(1))
@@ -71,10 +71,10 @@ var _ = Describe("Prometheus Metrics", func() {
 			var commitTotal *dto.MetricFamily
 			var commitDuration *dto.MetricFamily
 			for _, mf := range mfs {
-				if mf.GetName() == "commit" {
+				if mf.GetName() == "adjoe_djoemo_commit" {
 					commitTotal = mf
 				}
-				if mf.GetName() == "commit_duration_seconds" {
+				if mf.GetName() == "adjoe_djoemo_commit_duration_seconds" {
 					commitDuration = mf
 				}
 			}
@@ -92,10 +92,10 @@ var _ = Describe("Prometheus Metrics", func() {
 			var readTotal *dto.MetricFamily
 			var readDuration *dto.MetricFamily
 			for _, mf := range mfs {
-				if mf.GetName() == "read" {
+				if mf.GetName() == "adjoe_djoemo_read" {
 					readTotal = mf
 				}
-				if mf.GetName() == "read_duration_seconds" {
+				if mf.GetName() == "adjoe_djoemo_read_duration_seconds" {
 					readDuration = mf
 				}
 			}
@@ -115,10 +115,10 @@ var _ = Describe("Prometheus Metrics", func() {
 			var updateTotal *dto.MetricFamily
 			var updateDuration *dto.MetricFamily
 			for _, mf := range mfs {
-				if mf.GetName() == "update" {
+				if mf.GetName() == "adjoe_djoemo_update" {
 					updateTotal = mf
 				}
-				if mf.GetName() == "update_duration_seconds" {
+				if mf.GetName() == "adjoe_djoemo_update_duration_seconds" {
 					updateDuration = mf
 				}
 			}
@@ -135,8 +135,8 @@ var _ = Describe("Prometheus Metrics", func() {
 			sharedRegistry := prometheus.NewRegistry()
 
 			// Create two prometheus metrics instances with same registry
-			pm1 := djoemo.NewPrometheusMetrics(sharedRegistry)
-			pm2 := djoemo.NewPrometheusMetrics(sharedRegistry)
+			pm1 := djoemo.NewPrometheusMetrics(sharedRegistry, nil)
+			pm2 := djoemo.NewPrometheusMetrics(sharedRegistry, nil)
 
 			m := djoemo.New()
 			m.Add(pm1)
@@ -153,16 +153,16 @@ var _ = Describe("Prometheus Metrics", func() {
 			var readTotal *dto.MetricFamily
 			var readDuration *dto.MetricFamily
 			for _, mf := range mfs {
-				if mf.GetName() == "read" {
+				if mf.GetName() == "adjoe_djoemo_read" {
 					readTotal = mf
 				}
-				if mf.GetName() == "read_duration_seconds" {
+				if mf.GetName() == "adjoe_djoemo_read_duration_seconds" {
 					readDuration = mf
 				}
 			}
 			Expect(readTotal).NotTo(BeNil())
-			// Both Record calls should have incremented the same counter
-			Expect(readTotal.GetMetric()[0].GetCounter().GetValue()).To(Equal(4.0)) // Count of 2 calls * 2 metrics instances
+			// Both Record calls should have incremented the same counter (2 calls * 2 metrics instances)
+			Expect(readTotal.GetMetric()[0].GetCounter().GetValue()).To(Equal(4.0))
 			Expect(readDuration.GetMetric()[0].GetHistogram().GetSampleSum()).To(BeNumerically("~", 0.06, 0.001))
 			Expect(readDuration.GetMetric()[0].GetHistogram().GetSampleCount()).To(Equal(uint64(4)))
 		})
@@ -187,10 +187,10 @@ var _ = Describe("Prometheus Metrics", func() {
 			var readTotal *dto.MetricFamily
 			var readDuration *dto.MetricFamily
 			for _, mf := range mfs {
-				if mf.GetName() == "read" {
+				if mf.GetName() == "adjoe_djoemo_read" {
 					readTotal = mf
 				}
-				if mf.GetName() == "read_duration_seconds" {
+				if mf.GetName() == "adjoe_djoemo_read_duration_seconds" {
 					readDuration = mf
 				}
 			}

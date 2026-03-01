@@ -17,8 +17,8 @@ type RepositoryInterface interface {
 	// WithMetrics enables metrics; it accepts MetricsInterface as metrics publisher
 	WithMetrics(metricsInterface MetricsInterface)
 
-	// WithPrometheusMetrics enables prometheus metrics
-	WithPrometheusMetrics(registry *prometheus.Registry) RepositoryInterface
+	// WithPrometheusMetrics enables prometheus metrics with the given config
+	WithPrometheusMetrics(registry *prometheus.Registry, cfg *PrometheusConfig) RepositoryInterface
 
 	// GetItemWithContext get item; it accepts a key interface that is used to get the table name, hash key and range key if it exists; the output will be given in item
 	// returns true if item is found, returns false and nil if no item found, returns false and an error in case of error
