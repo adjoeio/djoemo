@@ -28,9 +28,9 @@ func (gi *GlobalIndex) WithMetrics(metricsInterface MetricsInterface) {
 	gi.metrics.Add(metricsInterface)
 }
 
-// WithPrometheusMetrics enables prometheus metrics
-func (gi *GlobalIndex) WithPrometheusMetrics(registry *prometheus.Registry) GlobalIndexInterface {
-	prommetrics := NewPrometheusMetrics(registry)
+// WithPrometheusMetrics enables prometheus metrics with the given config
+func (gi *GlobalIndex) WithPrometheusMetrics(registry *prometheus.Registry, cfg *PrometheusConfig) GlobalIndexInterface {
+	prommetrics := NewPrometheusMetrics(registry, cfg)
 	gi.metrics.Add(prommetrics)
 	return gi
 }

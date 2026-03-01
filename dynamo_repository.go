@@ -40,9 +40,9 @@ func (repository *Repository) WithMetrics(metricsInterface MetricsInterface) {
 	repository.metrics.Add(metricsInterface)
 }
 
-// WithPrometheusMetrics enables prometheus metrics
-func (repository *Repository) WithPrometheusMetrics(registry *prometheus.Registry) RepositoryInterface {
-	prommetrics := NewPrometheusMetrics(registry)
+// WithPrometheusMetrics enables prometheus metrics with the given config
+func (repository *Repository) WithPrometheusMetrics(registry *prometheus.Registry, cfg *PrometheusConfig) RepositoryInterface {
+	prommetrics := NewPrometheusMetrics(registry, cfg)
 	repository.metrics.Add(prommetrics)
 	return repository
 }
