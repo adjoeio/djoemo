@@ -89,6 +89,14 @@ func (repository Repository) SaveItemWithContext(ctx context.Context, key KeyInt
 	return nil
 }
 
+// isEmptyString returns true if value is a string with zero length.
+// Empty strings cannot be marshaled to valid DynamoDB AttributeValues by guregu/dynamo
+// (they marshal to nil), which causes SerializationException errors from DynamoDB.
+func isEmptyString(value interface{}) bool {
+	str, ok := value.(string)
+	return ok && str == ""
+}
+
 // UpdateWithContext updates item by key; it accepts an expression (Set, SetSet, SetIfNotExists, SetExpr); key is the key to be updated;
 // values contains the values that should be used in the update; context which used to enable log with context
 // returns error in case of error
@@ -109,6 +117,11 @@ func (repository Repository) UpdateWithContext(ctx context.Context, expression U
 	}
 
 	for expr, value := range values {
+		// Skip empty strings: guregu/dynamo marshals them to nil, which causes
+		// DynamoDB SerializationException errors.
+		if isEmptyString(value) {
+			continue
+		}
 		if expression == Add {
 			update.Add(expr, value)
 		}
@@ -159,6 +172,11 @@ func (repository Repository) prepareUpdateWithUpdateExpressions(
 		expression := UpdateExpression(updateExpression)
 
 		for expr, value := range v {
+			// Skip empty strings: guregu/dynamo marshals them to nil, which causes
+			// DynamoDB SerializationException errors.
+			if isEmptyString(value) {
+				continue
+			}
 			if expression == Add {
 				update.Add(expr, value)
 			}
