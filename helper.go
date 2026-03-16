@@ -13,6 +13,11 @@ func valueFromPtr[T any](ptr *T) T {
 	return *ptr
 }
 
+func isEmptyString(value any) bool {
+	str, ok := value.(string)
+	return ok && str == ""
+}
+
 func buildTableKeyCondition(table dynamo.Table, key KeyInterface) *dynamo.Query {
 	q := table.Get(*key.HashKeyName(), key.HashKey())
 
