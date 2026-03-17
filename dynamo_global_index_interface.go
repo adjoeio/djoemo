@@ -15,8 +15,8 @@ type GlobalIndexInterface interface {
 	// WithMetrics enables metrics; it accepts MetricsInterface as metrics publisher
 	WithMetrics(metricsInterface MetricsInterface)
 
-	// WithPrometheusMetrics enables prometheus metrics
-	WithPrometheusMetrics(registry *prometheus.Registry) GlobalIndexInterface
+	// WithPrometheusMetrics enables prometheus metrics with the given config
+	WithPrometheusMetrics(registry *prometheus.Registry, cfg *PrometheusConfig) GlobalIndexInterface
 
 	// GetItemWithContext get item from index; it accepts a key interface that is used to get the table name, hash key and range key if it exists;
 	// context which used to enable log with context; the output will be given in item
