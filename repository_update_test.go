@@ -70,6 +70,17 @@ var _ = Describe("Repository", func() {
 				err := repository.UpdateWithContext(context.Background(), djoemo.Set, key, updates)
 				Expect(err).To(Equal(djoemo.ErrInvalidHashKeyValue))
 			})
+			It("should fail with hash key value is empty string", func() {
+				key := djoemo.Key().WithTableName(UserTableName).WithHashKeyName("UUID").WithHashKey("")
+				metricsMock.EXPECT().Record(gomock.Any(), djoemo.OpUpdate, key, gomock.Any(), false)
+				updates := map[string]interface{}{
+					"UserName": "name2",
+					"TraceID":  "name4",
+				}
+
+				err := repository.UpdateWithContext(context.Background(), djoemo.Set, key, updates)
+				Expect(err).To(Equal(djoemo.ErrInvalidHashKeyValue))
+			})
 		})
 
 		It("should Update item with Set", func() {
@@ -95,6 +106,54 @@ var _ = Describe("Repository", func() {
 			}
 
 			err := repository.UpdateWithContext(context.Background(), djoemo.Set, key, updates)
+			Expect(err).To(BeNil())
+		})
+
+		It("should skip empty string values in Set update", func() {
+			key := djoemo.Key().WithTableName(UserTableName).
+				WithHashKeyName("UUID").
+				WithHashKey("uuid")
+
+			dMock.Should().Update(
+				dMock.WithTable(key.TableName()),
+				dMock.WithMatch(
+					mock.InputExpect().
+						FieldEq("UserName", "name2"),
+				),
+			).Exec()
+
+			metricsMock.EXPECT().Record(gomock.Any(), djoemo.OpUpdate, key, gomock.Any(), true)
+
+			updates := map[string]interface{}{
+				"UserName": "name2",
+				"DeviceID": "",
+			}
+
+			err := repository.UpdateWithContext(context.Background(), djoemo.Set, key, updates)
+			Expect(err).To(BeNil())
+		})
+
+		It("should skip empty string values in SetIfNotExists update", func() {
+			key := djoemo.Key().WithTableName(UserTableName).
+				WithHashKeyName("UUID").
+				WithHashKey("uuid")
+
+			dMock.Should().Update(
+				dMock.WithTable(key.TableName()),
+				dMock.WithMatch(
+					mock.InputExpect().
+						FieldEq("SDKHash", "hash123"),
+				),
+			).Exec()
+
+			metricsMock.EXPECT().Record(gomock.Any(), djoemo.OpUpdate, key, gomock.Any(), true)
+
+			updates := map[string]interface{}{
+				"SDKHash":    "hash123",
+				"DeviceName": "",
+			}
+
+			err := repository.UpdateWithContext(context.Background(), djoemo.SetIfNotExists, key, updates)
 			Expect(err).To(BeNil())
 		})
 
@@ -212,6 +271,82 @@ var _ = Describe("Repository", func() {
 
 			ret := repository.UpdateWithContext(context.Background(), djoemo.Set, key, updates)
 			Expect(ret).To(Equal(err))
+		})
+	})
+
+	Describe("UpdateWithUpdateExpressions", func() {
+		It("should update item with mixed Set and SetIfNotExists expressions", func() {
+			key := djoemo.Key().WithTableName(UserTableName).
+				WithHashKeyName("UUID").
+				WithHashKey("uuid")
+
+			dMock.Should().Update(
+				dMock.WithTable(key.TableName()),
+				dMock.WithMatch(
+					mock.InputExpect().
+						FieldEq("UserName", "name2").FieldEq("SDKHash", "hash123"),
+				),
+			).Exec()
+
+			metricsMock.EXPECT().Record(gomock.Any(), djoemo.OpUpdate, key, gomock.Any(), true)
+
+			updateExpressions := djoemo.UpdateExpressions{
+				djoemo.Set: {
+					"UserName": "name2",
+				},
+				djoemo.SetIfNotExists: {
+					"SDKHash": "hash123",
+				},
+			}
+
+			err := repository.UpdateWithUpdateExpressions(context.Background(), key, updateExpressions)
+			Expect(err).To(BeNil())
+		})
+
+		It("should fail with hash key value is empty string", func() {
+			key := djoemo.Key().WithTableName(UserTableName).WithHashKeyName("UUID").WithHashKey("")
+			metricsMock.EXPECT().Record(gomock.Any(), djoemo.OpUpdate, key, gomock.Any(), false)
+
+			updateExpressions := djoemo.UpdateExpressions{
+				djoemo.Set: {
+					"UserName": "name2",
+				},
+			}
+
+			err := repository.UpdateWithUpdateExpressions(context.Background(), key, updateExpressions)
+			Expect(err).To(Equal(djoemo.ErrInvalidHashKeyValue))
+		})
+
+		It("should skip empty string values in Set and SetIfNotExists expressions", func() {
+			key := djoemo.Key().WithTableName(UserTableName).
+				WithHashKeyName("UUID").
+				WithHashKey("uuid")
+
+			dMock.Should().Update(
+				dMock.WithTable(key.TableName()),
+				dMock.WithMatch(
+					mock.InputExpect().
+						FieldEq("UserName", "name2").FieldEq("SDKHash", "hash123"),
+				),
+			).Exec()
+
+			metricsMock.EXPECT().Record(gomock.Any(), djoemo.OpUpdate, key, gomock.Any(), true)
+
+			updateExpressions := djoemo.UpdateExpressions{
+				djoemo.Set: {
+					"UserName":    "name2",
+					"DeviceID":    "",
+					"ProductName": "",
+				},
+				djoemo.SetIfNotExists: {
+					"SDKHash":    "hash123",
+					"DeviceName": "",
+					"DeviceType": "",
+				},
+			}
+
+			err := repository.UpdateWithUpdateExpressions(context.Background(), key, updateExpressions)
+			Expect(err).To(BeNil())
 		})
 	})
 

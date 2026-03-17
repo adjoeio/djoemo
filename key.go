@@ -100,5 +100,8 @@ func isValidHashKey(key KeyInterface) error {
 	if key.HashKey() == nil {
 		return ErrInvalidHashKeyValue
 	}
+	if str, ok := key.HashKey().(string); ok && str == "" {
+		return ErrInvalidHashKeyValue
+	}
 	return nil
 }
