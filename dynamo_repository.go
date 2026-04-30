@@ -109,9 +109,6 @@ func (repository Repository) UpdateWithContext(ctx context.Context, expression U
 	}
 
 	for expr, value := range values {
-		if isEmptyString(value) {
-			continue
-		}
 		if expression == Add {
 			update.Add(expr, value)
 		}
@@ -162,9 +159,6 @@ func (repository Repository) prepareUpdateWithUpdateExpressions(
 		expression := UpdateExpression(updateExpression)
 
 		for expr, value := range v {
-			if isEmptyString(value) {
-				continue
-			}
 			if expression == Add {
 				update.Add(expr, value)
 			}
